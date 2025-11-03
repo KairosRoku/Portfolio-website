@@ -1,84 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExternalLink, X, Calendar, Users } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
-
-interface Game {
-  id: number;
-  title: string;
-  genre: string;
-  description: string;
-  image: string;
-  tech: string[];
-  year: string;
-  players: string;
-}
+import { supabase, Game } from '../../lib/supabase';
 
 export default function GameDevShowcase() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const games: Game[] = [
-    {
-      id: 1,
-      title: 'Neon Runner',
-      genre: 'Action Platformer',
-      description: 'Fast-paced cyberpunk platformer with fluid movement mechanics',
-      image: 'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Unity', 'C#', '2D'],
-      year: '2023',
-      players: 'Single Player',
-    },
-    {
-      id: 2,
-      title: 'Mystic Realms',
-      genre: 'RPG Adventure',
-      description: 'Story-driven RPG with dynamic combat and branching narratives',
-      image: 'https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Unreal Engine', 'Blueprint', '3D'],
-      year: '2025',
-      players: 'Single Player',
-    },
-    {
-      id: 3,
-      title: 'Puzzle Nexus',
-      genre: 'Puzzle Strategy',
-      description: 'Mind-bending puzzles that blend logic with spatial reasoning',
-      image: 'https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Godot', 'GDScript', '2D'],
-      year: '2022',
-      players: 'Single Player',
-    },
-    {
-      id: 4,
-      title: 'Stellar Voyage',
-      genre: 'Space Exploration',
-      description: 'Open-world space exploration with procedural generation',
-      image: 'https://images.pexels.com/photos/2471171/pexels-photo-2471171.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Unity', 'C#', '3D'],
-      year: 'TBA',
-      players: 'Single Player',
-    },
-    {
-      id: 5,
-      title: 'Shadow Tactics',
-      genre: 'Stealth Strategy',
-      description: 'Tactical stealth game with real-time strategy elements',
-      image: 'https://images.pexels.com/photos/3184454/pexels-photo-3184454.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Unity', 'C#', '3D'],
-      year: '2023',
-      players: 'Single Player',
-    },
-    {
-      id: 6,
-      title: 'Rhythm Clash',
-      genre: 'Rhythm Action',
-      description: 'Music-driven combat where every beat matters',
-      image: 'https://images.pexels.com/photos/3761504/pexels-photo-3761504.jpeg?auto=compress&cs=tinysrgb&w=800',
-      tech: ['Unity', 'C#', '2D'],
-      year: '2024',
-      players: 'Single/Multiplayer',
-    },
-  ];
+  useEffect(() => {
+    fetchGames();
+  }, []);
+
+  const fetchGames = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('games')
+        .select('*')
+        .eq('is_enabled', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setGames(data || []);
+    } catch (error) {
+      console.error('Error fetching games:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const navLinks = [{ label: 'Back', path: '/' }];
 
@@ -98,41 +48,52 @@ export default function GameDevShowcase() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {games.map((game, index) => (
-              <div
-                key={game.id}
-                onClick={() => setSelectedGame(game)}
-                className="group relative overflow-hidden rounded-2xl bg-white border-2 border-cottage-200 hover:border-brown-300 transition-all duration-500 cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-2xl animate-slide-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="aspect-video overflow-hidden">
-                  <img
-                    src={game.image}
-                    alt={game.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block w-12 h-12 border-4 border-brown-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-brown-600">Loading games...</p>
+            </div>
+          ) : games.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-brown-600 text-lg">No games to display yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {games.map((game, index) => (
+                <div
+                  key={game.id}
+                  onClick={() => setSelectedGame(game)}
+                  className="group relative overflow-hidden rounded-2xl bg-white border-2 border-cottage-200 hover:border-brown-300 transition-all duration-500 cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-2xl animate-slide-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={game.image_url}
+                      alt={game.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  </div>
 
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-brown-800 mb-1">{game.title}</h3>
-                  <p className="text-brown-600 text-sm font-medium mb-3">{game.genre}</p>
-                  <p className="text-brown-700 text-sm mb-4 leading-relaxed">{game.description}</p>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-brown-800 mb-1">{game.title}</h3>
+                    <p className="text-brown-600 text-sm font-medium mb-3">{game.genre}</p>
+                    <p className="text-brown-700 text-sm mb-4 leading-relaxed">{game.description}</p>
 
-                  <div className="flex flex-wrap gap-2">
-                    {game.tech.map((tech, techIndex) => (
-                      <span
-                        key={techIndex}
-                        className="px-3 py-1 text-xs font-medium bg-cottage-100 text-brown-700 rounded-full border border-cottage-200"
-                      >
-                        {tech}
-                      </span>
-                    ))}
+                    <div className="flex flex-wrap gap-2">
+                      {game.tech.map((tech, techIndex) => (
+                        <span
+                          key={techIndex}
+                          className="px-3 py-1 text-xs font-medium bg-cottage-100 text-brown-700 rounded-full border border-cottage-200"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -154,7 +115,7 @@ export default function GameDevShowcase() {
 
             <div className="aspect-video overflow-hidden bg-brown-100">
               <img
-                src={selectedGame.image}
+                src={selectedGame.image_url}
                 alt={selectedGame.title}
                 className="w-full h-full object-cover"
               />

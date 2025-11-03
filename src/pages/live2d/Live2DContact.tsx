@@ -21,9 +21,15 @@ export default function Live2DContact() {
     console.log('Commission form submitted:', formData);
   };
 
+  const rigPrices = [
+    { type: 'Full Body', price: 600, description: 'Complete full body rigging with advanced physics' },
+    { type: 'Half Body', price: 400, description: 'Upper body rigging with expression support' },
+    { type: 'Chibi', price: 300, description: 'Cute chibi style rigging' },
+  ];
+
   const navLinks = [
     { label: 'Showcase', path: '/live2d/showcase' },
-    { label: 'Contact', path: '/live2d/contact' },
+    { label: 'Inquire', path: '/live2d/contact' },
     { label: 'Terms', path: '/live2d/tos' },
   ];
 
@@ -35,38 +41,48 @@ export default function Live2DContact() {
       <main className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold text-brown-800 mb-4">Commission Inquiry</h1>
+            <h1 className="text-4xl md:text-6xl font-bold text-brown-800 mb-4">Commission Inquire</h1>
             <p className="text-brown-600 text-lg max-w-2xl mx-auto">
               Ready to bring your character to life? Fill out the form and I'll get back to you soon
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="p-6 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg">
-              <div className="w-12 h-12 bg-sakura-100 rounded-full flex items-center justify-center mb-4">
-                <DollarSign className="text-sakura-600" size={24} />
-              </div>
-              <h3 className="text-lg font-semibold text-brown-800 mb-2">Pricing</h3>
-              <p className="text-brown-700 text-sm mb-2">Starting from $800</p>
-              <p className="text-brown-600 text-xs">Varies by complexity</p>
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-brown-800 text-center mb-6">Pricing Packages</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {rigPrices.map((rig, index) => (
+                <div key={index} className="p-8 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="text-center mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-peach-400 to-cottage-400 rounded-full mb-4">
+                      <DollarSign className="text-white" size={28} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-brown-800 mb-2">{rig.type}</h3>
+                    <div className="text-4xl font-bold text-peach-600 mb-2">${rig.price}</div>
+                    <p className="text-brown-600 text-sm">USD</p>
+                  </div>
+                  <p className="text-brown-700 text-center text-sm">{rig.description}</p>
+                </div>
+              ))}
             </div>
 
-            <div className="p-6 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg">
-              <div className="w-12 h-12 bg-peach-100 rounded-full flex items-center justify-center mb-4">
-                <Clock className="text-peach-600" size={24} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-6 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg">
+                <div className="w-12 h-12 bg-peach-100 rounded-full flex items-center justify-center mb-4">
+                  <Clock className="text-peach-600" size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-brown-800 mb-2">Timeline</h3>
+                <p className="text-brown-700 text-sm mb-2">4-8 weeks</p>
+                <p className="text-brown-600 text-xs">Depends on project scope</p>
               </div>
-              <h3 className="text-lg font-semibold text-brown-800 mb-2">Timeline</h3>
-              <p className="text-brown-700 text-sm mb-2">4-8 weeks</p>
-              <p className="text-brown-600 text-xs">Depends on project scope</p>
-            </div>
 
-            <div className="p-6 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg">
-              <div className="w-12 h-12 bg-cottage-100 rounded-full flex items-center justify-center mb-4">
-                <Mail className="text-cottage-600" size={24} />
+              <div className="p-6 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-2xl shadow-lg">
+                <div className="w-12 h-12 bg-cottage-100 rounded-full flex items-center justify-center mb-4">
+                  <Mail className="text-cottage-600" size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-brown-800 mb-2">Response Time</h3>
+                <p className="text-brown-700 text-sm mb-2">Within 48 hours</p>
+                <p className="text-brown-600 text-xs">Usually much faster</p>
               </div>
-              <h3 className="text-lg font-semibold text-brown-800 mb-2">Response Time</h3>
-              <p className="text-brown-700 text-sm mb-2">Within 48 hours</p>
-              <p className="text-brown-600 text-xs">Usually much faster</p>
             </div>
           </div>
 
@@ -124,9 +140,9 @@ export default function Live2DContact() {
                   required
                 >
                   <option value="">Select type...</option>
-                  <option value="simple">Simple Rig</option>
-                  <option value="half">Half Body</option>
-                  <option value="full">Full Body</option>
+                  <option value="full-body">Full Body - $600 USD</option>
+                  <option value="half-body">Half Body - $400 USD</option>
+                  <option value="chibi">Chibi - $300 USD</option>
                   <option value="custom">Custom / Not Sure</option>
                 </select>
               </div>

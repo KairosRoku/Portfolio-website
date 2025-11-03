@@ -1,10 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Sparkles, Gamepad2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Hero() {
   const navigate = useNavigate();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [gameDevEnabled, setGameDevEnabled] = useState(true);
+
+  useEffect(() => {
+    checkGameDevEnabled();
+  }, []);
+
+  const checkGameDevEnabled = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'gamedev_enabled')
+        .maybeSingle();
+
+      if (error) throw error;
+      setGameDevEnabled(data?.value === 'true');
+    } catch (error) {
+      console.error('Error checking gamedev status:', error);
+    }
+  };
+
+  const widthClass = gameDevEnabled ? 'w-1/3' : 'w-1/2';
 
   return (
     <section className="relative min-h-screen flex overflow-hidden">
@@ -14,7 +37,7 @@ export default function Hero() {
             ? 'w-full'
             : hoveredSection
             ? 'w-0 opacity-0'
-            : 'w-1/3'
+            : widthClass
         }`}
         onMouseEnter={() => setHoveredSection('photography')}
         onMouseLeave={() => setHoveredSection(null)}
@@ -50,7 +73,7 @@ export default function Hero() {
             ? 'w-full'
             : hoveredSection
             ? 'w-0 opacity-0'
-            : 'w-1/3'
+            : widthClass
         }`}
         onMouseEnter={() => setHoveredSection('live2d')}
         onMouseLeave={() => setHoveredSection(null)}
@@ -77,42 +100,46 @@ export default function Hero() {
           </p>
         </div>
 
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brown-300 to-transparent"></div>
+        {gameDevEnabled && (
+          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brown-300 to-transparent"></div>
+        )}
       </div>
 
-      <div
-        className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer ${
-          hoveredSection === 'gamedev'
-            ? 'w-full'
-            : hoveredSection
-            ? 'w-0 opacity-0'
-            : 'w-1/3'
-        }`}
-        onMouseEnter={() => setHoveredSection('gamedev')}
-        onMouseLeave={() => setHoveredSection(null)}
-        onClick={() => navigate('/gamedev')}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-cottage-50 via-sakura-50 to-peach-50"></div>
+      {gameDevEnabled && (
+        <div
+          className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer ${
+            hoveredSection === 'gamedev'
+              ? 'w-full'
+              : hoveredSection
+              ? 'w-0 opacity-0'
+              : 'w-1/3'
+          }`}
+          onMouseEnter={() => setHoveredSection('gamedev')}
+          onMouseLeave={() => setHoveredSection(null)}
+          onClick={() => navigate('/gamedev')}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-cottage-50 via-sakura-50 to-peach-50"></div>
 
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-10 w-96 h-96 bg-peach-300 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-cottage-300 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className={`relative z-10 text-center px-6 transition-all duration-700 ${
-          hoveredSection === 'gamedev' ? 'scale-110' : 'scale-100'
-        }`}>
-          <div className="inline-flex items-center justify-center w-24 h-24 mb-6 bg-white/80 backdrop-blur-sm rounded-full shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-            <Gamepad2 className="text-brown-500" size={40} />
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-20 left-10 w-96 h-96 bg-peach-300 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-cottage-300 rounded-full blur-3xl"></div>
           </div>
-          <h2 className="text-4xl md:text-6xl font-bold mb-4 text-brown-800">
-            Game Dev
-          </h2>
-          <p className="text-lg md:text-xl text-brown-600 max-w-md mx-auto">
-            Creating interactive experiences and digital worlds
-          </p>
+
+          <div className={`relative z-10 text-center px-6 transition-all duration-700 ${
+            hoveredSection === 'gamedev' ? 'scale-110' : 'scale-100'
+          }`}>
+            <div className="inline-flex items-center justify-center w-24 h-24 mb-6 bg-white/80 backdrop-blur-sm rounded-full shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+              <Gamepad2 className="text-brown-500" size={40} />
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold mb-4 text-brown-800">
+              Game Dev
+            </h2>
+            <p className="text-lg md:text-xl text-brown-600 max-w-md mx-auto">
+              Creating interactive experiences and digital worlds
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

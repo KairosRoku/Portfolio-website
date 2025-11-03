@@ -1,84 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
-
-interface Photo {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  image: string;
-}
+import { supabase, Photo } from '../../lib/supabase';
 
 export default function PhotographyShowcase() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const photos: Photo[] = [
-    {
-      id: 1,
-      title: 'Golden Hour Cityscape',
-      description: 'Urban beauty bathed in warm sunset light',
-      category: 'Urban',
-      image: 'https://images.pexels.com/photos/1619654/pexels-photo-1619654.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 2,
-      title: 'Portrait in Natural Light',
-      description: 'Soft, elegant portraiture capturing genuine emotion',
-      category: 'Portrait',
-      image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 3,
-      title: 'Mountain Wilderness',
-      description: 'Majestic peaks under vast open skies',
-      category: 'Nature',
-      image: 'https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 4,
-      title: 'Abstract Reflections',
-      description: 'Playing with light, shadow, and geometry',
-      category: 'Abstract',
-      image: 'https://images.pexels.com/photos/1205301/pexels-photo-1205301.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 5,
-      title: 'Street Life',
-      description: 'Candid moments in the heart of the city',
-      category: 'Street',
-      image: 'https://images.pexels.com/photos/1105766/pexels-photo-1105766.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 6,
-      title: 'Architectural Marvel',
-      description: 'Modern design meets timeless elegance',
-      category: 'Architecture',
-      image: 'https://images.pexels.com/photos/1115804/pexels-photo-1115804.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 7,
-      title: 'Sunset Over Ocean',
-      description: 'Where sky and sea become one',
-      category: 'Nature',
-      image: 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 8,
-      title: 'Urban Night Lights',
-      description: 'City energy captured after dark',
-      category: 'Urban',
-      image: 'https://images.pexels.com/photos/1486222/pexels-photo-1486222.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-    {
-      id: 9,
-      title: 'Fashion Editorial',
-      description: 'Style and sophistication in every frame',
-      category: 'Portrait',
-      image: 'https://images.pexels.com/photos/1229896/pexels-photo-1229896.jpeg?auto=compress&cs=tinysrgb&w=800',
-    },
-  ];
+  useEffect(() => {
+    fetchPhotos();
+  }, []);
+
+  const fetchPhotos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('photos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPhotos(data || []);
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const navLinks = [
     { label: 'Portfolio', path: '/photography/showcase' },
@@ -102,37 +51,48 @@ export default function PhotographyShowcase() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {photos.map((photo, index) => (
-              <div
-                key={photo.id}
-                onClick={() => setSelectedPhoto(photo)}
-                className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover:scale-[1.02] animate-slide-up border-2 border-cottage-200"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={photo.image}
-                    alt={photo.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block w-12 h-12 border-4 border-sakura-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-brown-600">Loading portfolio...</p>
+            </div>
+          ) : photos.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-brown-600 text-lg">No photos to display yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {photos.map((photo, index) => (
+                <div
+                  key={photo.id}
+                  onClick={() => setSelectedPhoto(photo)}
+                  className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover:scale-[1.02] animate-slide-up border-2 border-cottage-200"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <img
+                      src={photo.image_url}
+                      alt={photo.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  </div>
 
-                <div className="absolute inset-0 bg-gradient-to-t from-brown-900/80 via-brown-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-xl font-semibold text-white mb-2">{photo.title}</h3>
-                    <p className="text-peach-100 text-sm">{photo.description}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-brown-900/80 via-brown-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <h3 className="text-xl font-semibold text-white mb-2">{photo.title}</h3>
+                      <p className="text-peach-100 text-sm">{photo.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="absolute top-4 right-4">
+                    <span className="px-3 py-1 text-xs font-semibold bg-white/90 text-sakura-600 rounded-full shadow-md">
+                      {photo.category}
+                    </span>
                   </div>
                 </div>
-
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 text-xs font-semibold bg-white/90 text-sakura-600 rounded-full shadow-md">
-                    {photo.category}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -155,7 +115,7 @@ export default function PhotographyShowcase() {
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="aspect-square overflow-hidden bg-brown-100">
                 <img
-                  src={selectedPhoto.image}
+                  src={selectedPhoto.image_url}
                   alt={selectedPhoto.title}
                   className="w-full h-full object-cover"
                 />

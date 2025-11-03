@@ -1,85 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Play, Star, X } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
-
-interface Model {
-  id: number;
-  title: string;
-  client: string;
-  type: string;
-  image: string;
-  features: string[];
-  rating: number;
-  year: string;
-}
+import { supabase, Live2DModel } from '../../lib/supabase';
 
 export default function Live2DShowcase() {
   const [selectedType, setSelectedType] = useState('All');
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [selectedModel, setSelectedModel] = useState<Live2DModel | null>(null);
+  const [models, setModels] = useState<Live2DModel[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const models: Model[] = [
-    {
-      id: 1,
-      title: 'Ethereal Mage VTuber',
-      client: 'StreamerName',
-      type: 'Full Rig',
-      image: 'https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Full body rigging', 'Advanced physics', 'Facial tracking', 'Eye tracking', 'Custom expressions'],
-      rating: 5,
-      year: '2024'
-    },
-    {
-      id: 2,
-      title: 'Cyberpunk Character',
-      client: 'GamingChannel',
-      type: 'Half Body',
-      image: 'https://images.pexels.com/photos/5207262/pexels-photo-5207262.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Half body rig', 'Hair physics', 'Expression set', 'Breathing animation'],
-      rating: 5,
-      year: '2024'
-    },
-    {
-      id: 3,
-      title: 'Fantasy Warrior Avatar',
-      client: 'Content Creator',
-      type: 'Full Rig',
-      image: 'https://images.pexels.com/photos/8728380/pexels-photo-8728380.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Full body rigging', 'Weapon physics', 'Battle expressions', 'Dynamic movement'],
-      rating: 5,
-      year: '2023'
-    },
-    {
-      id: 4,
-      title: 'Cute Mascot Character',
-      client: 'Brand Mascot',
-      type: 'Simple Rig',
-      image: 'https://images.pexels.com/photos/7234394/pexels-photo-7234394.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Basic rigging', 'Bounce physics', 'Simple expressions', 'Idle animation'],
-      rating: 4,
-      year: '2023'
-    },
-    {
-      id: 5,
-      title: 'Anime Idol VTuber',
-      client: 'Idol Group',
-      type: 'Full Rig',
-      image: 'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Performance ready', 'Stage lighting support', 'Dancing animations', 'Lip sync'],
-      rating: 5,
-      year: '2024'
-    },
-    {
-      id: 6,
-      title: 'Mysterious Sorcerer',
-      client: 'RPG Streamer',
-      type: 'Half Body',
-      image: 'https://images.pexels.com/photos/3184454/pexels-photo-3184454.jpeg?auto=compress&cs=tinysrgb&w=800',
-      features: ['Upper body rig', 'Cloak physics', 'Magic effects', 'Hand gestures'],
-      rating: 5,
-      year: '2023'
+  useEffect(() => {
+    fetchModels();
+  }, []);
+
+  const fetchModels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('live2d_models')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setModels(data || []);
+    } catch (error) {
+      console.error('Error fetching models:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const types = ['All', ...Array.from(new Set(models.map(m => m.type)))];
 
@@ -89,9 +38,22 @@ export default function Live2DShowcase() {
 
   const navLinks = [
     { label: 'Showcase', path: '/live2d/showcase' },
-    { label: 'Contact', path: '/live2d/contact' },
+    { label: 'Inquire', path: '/live2d/contact' },
     { label: 'Terms', path: '/live2d/tos' },
   ];
+
+  const getVideoEmbedUrl = (url: string) => {
+    if (!url) return null;
+
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(youtubeRegex);
+
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+
+    return url;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-peach-50 via-cottage-50 to-sakura-50 relative">
@@ -125,54 +87,65 @@ export default function Live2DShowcase() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredModels.map((model, index) => (
-              <div
-                key={model.id}
-                onClick={() => setSelectedModel(model)}
-                className="group relative overflow-hidden rounded-2xl bg-white border-2 border-cottage-200 hover:border-peach-300 transition-all duration-500 cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-2xl animate-slide-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="aspect-square overflow-hidden relative">
-                  <img
-                    src={model.image}
-                    alt={model.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brown-900/60 via-brown-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-peach-400 group-hover:bg-peach-500 flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                      <Play className="text-white ml-1" fill="white" size={24} />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block w-12 h-12 border-4 border-peach-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-brown-600">Loading models...</p>
+            </div>
+          ) : filteredModels.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-brown-600 text-lg">No models to display yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredModels.map((model, index) => (
+                <div
+                  key={model.id}
+                  onClick={() => setSelectedModel(model)}
+                  className="group relative overflow-hidden rounded-2xl bg-white border-2 border-cottage-200 hover:border-peach-300 transition-all duration-500 cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-2xl animate-slide-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="aspect-square overflow-hidden relative">
+                    <img
+                      src={model.image_url}
+                      alt={model.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brown-900/60 via-brown-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-peach-400 group-hover:bg-peach-500 flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
+                        <Play className="text-white ml-1" fill="white" size={24} />
+                      </div>
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      <span className="px-3 py-1 text-xs font-semibold bg-white/90 text-peach-600 rounded-full shadow-md">
+                        {model.type}
+                      </span>
+                    </div>
+                    <div className="absolute top-4 left-4 flex gap-1">
+                      {Array.from({ length: model.rating }).map((_, i) => (
+                        <Star key={i} size={14} className="text-sakura-400" fill="currentColor" />
+                      ))}
                     </div>
                   </div>
-                  <div className="absolute top-4 right-4">
-                    <span className="px-3 py-1 text-xs font-semibold bg-white/90 text-peach-600 rounded-full shadow-md">
-                      {model.type}
-                    </span>
-                  </div>
-                  <div className="absolute top-4 left-4 flex gap-1">
-                    {Array.from({ length: model.rating }).map((_, i) => (
-                      <Star key={i} size={14} className="text-sakura-400" fill="currentColor" />
-                    ))}
-                  </div>
-                </div>
 
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-brown-800 mb-1">{model.title}</h3>
-                  <p className="text-peach-600 text-sm mb-3">{model.client} • {model.year}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {model.features.slice(0, 3).map((feature, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 text-xs bg-cottage-100 text-brown-700 rounded-full border border-cottage-200"
-                      >
-                        {feature}
-                      </span>
-                    ))}
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-brown-800 mb-1">{model.title}</h3>
+                    <p className="text-peach-600 text-sm mb-3">{model.client} • {model.year}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {model.features.slice(0, 3).map((feature, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 text-xs bg-cottage-100 text-brown-700 rounded-full border border-cottage-200"
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -194,16 +167,30 @@ export default function Live2DShowcase() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="aspect-square overflow-hidden relative bg-brown-100">
-                <img
-                  src={selectedModel.image}
-                  alt={selectedModel.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button className="w-20 h-20 rounded-full bg-peach-500 hover:bg-peach-600 flex items-center justify-center transition-all shadow-2xl hover:scale-110">
-                    <Play className="text-white ml-1" fill="white" size={32} />
-                  </button>
-                </div>
+                {selectedModel.video_url && getVideoEmbedUrl(selectedModel.video_url) ? (
+                  getVideoEmbedUrl(selectedModel.video_url)?.includes('youtube.com') ? (
+                    <iframe
+                      src={getVideoEmbedUrl(selectedModel.video_url) || ''}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={getVideoEmbedUrl(selectedModel.video_url) || ''}
+                      className="w-full h-full object-cover"
+                      controls
+                      autoPlay
+                      loop
+                    />
+                  )
+                ) : (
+                  <img
+                    src={selectedModel.image_url}
+                    alt={selectedModel.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
 
               <div className="p-8 lg:p-12">
@@ -236,11 +223,11 @@ export default function Live2DShowcase() {
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full cottagecore-btn-primary">
+                  <button
+                    onClick={() => window.location.href = '/live2d/contact'}
+                    className="w-full cottagecore-btn-primary"
+                  >
                     Request Similar Commission
-                  </button>
-                  <button className="w-full cottagecore-btn-secondary">
-                    Download Demo Video
                   </button>
                 </div>
               </div>

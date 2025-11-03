@@ -24,6 +24,7 @@ function App() {
         <Route path="/live2d" element={<Live2DShowcase />} />
         <Route path="/live2d/showcase" element={<Live2DShowcase />} />
         <Route path="/live2d/contact" element={<Live2DContact />} />
+        <Route path="/live2d/inquire" element={<Live2DContact />} />
         <Route path="/live2d/tos" element={<Live2DTOS />} />
 
         <Route path="/gamedev" element={<GameDevShowcase />} />

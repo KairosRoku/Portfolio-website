@@ -32,12 +32,12 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex overflow-hidden">
       <div
-        className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer ${
+        className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
           hoveredSection === 'photography'
             ? 'w-full'
-            : hoveredSection
-            ? 'w-0 opacity-0'
-            : widthClass
+            : hoveredSection === null
+            ? widthClass
+            : 'w-0 opacity-0'
         }`}
         onMouseEnter={() => setHoveredSection('photography')}
         onMouseLeave={() => setHoveredSection(null)}
@@ -68,12 +68,12 @@ export default function Hero() {
       </div>
 
       <div
-        className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer ${
+        className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
           hoveredSection === 'live2d'
             ? 'w-full'
-            : hoveredSection
-            ? 'w-0 opacity-0'
-            : widthClass
+            : hoveredSection === null
+            ? widthClass
+            : 'w-0 opacity-0'
         }`}
         onMouseEnter={() => setHoveredSection('live2d')}
         onMouseLeave={() => setHoveredSection(null)}
@@ -107,12 +107,12 @@ export default function Hero() {
 
       {gameDevEnabled && (
         <div
-          className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer ${
+          className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
             hoveredSection === 'gamedev'
               ? 'w-full'
-              : hoveredSection
-              ? 'w-0 opacity-0'
-              : 'w-1/3'
+              : hoveredSection === null
+              ? 'w-1/3'
+              : 'w-0 opacity-0'
           }`}
           onMouseEnter={() => setHoveredSection('gamedev')}
           onMouseLeave={() => setHoveredSection(null)}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Clock, DollarSign, Send } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
+import { supabase } from '../../lib/supabase';
 
 export default function Live2DContact() {
   const [formData, setFormData] = useState({
@@ -9,16 +10,59 @@ export default function Live2DContact() {
     email: '',
     discord: '',
     rigType: '',
-    budget: '',
     deadline: '',
-    hasArtwork: '',
+    canStream: '',
     reference: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Commission form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitMessage('');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-inquiry-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          discord: formData.discord,
+          rigType: formData.rigType,
+          deadline: formData.deadline,
+          canStream: formData.canStream,
+          reference: formData.reference,
+          message: formData.message,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send inquiry');
+
+      setSubmitMessage('Inquiry sent successfully! I will get back to you soon.');
+      setFormData({
+        name: '',
+        email: '',
+        discord: '',
+        rigType: '',
+        deadline: '',
+        canStream: '',
+        reference: '',
+        message: ''
+      });
+
+      setTimeout(() => setSubmitMessage(''), 5000);
+    } catch (error) {
+      console.error('Error:', error);
+      setSubmitMessage('Error sending inquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const rigPrices = [
@@ -90,7 +134,7 @@ export default function Live2DContact() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-semibold text-brown-800 mb-2">
-                  Your Name
+                  Your Name <span className="text-peach-600">(or alias)</span>
                 </label>
                 <input
                   type="text"
@@ -143,62 +187,48 @@ export default function Live2DContact() {
                   <option value="full-body">Full Body - $600 USD</option>
                   <option value="half-body">Half Body - $400 USD</option>
                   <option value="chibi">Chibi - $300 USD</option>
-                  <option value="custom">Custom / Not Sure</option>
+                  <option value="animation">Animation</option>
+                  <option value="others">Others</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-brown-800 mb-2">
-                  Budget Range
-                </label>
-                <input
-                  type="text"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                  className="cottagecore-input"
-                  placeholder="e.g., $800-$1500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-brown-800 mb-2">
-                  Desired Deadline
-                </label>
-                <input
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="cottagecore-input"
-                />
               </div>
             </div>
 
             <div className="mb-6">
               <label className="block text-sm font-semibold text-brown-800 mb-2">
-                Do you have artwork ready?
+                Desired Deadline
+              </label>
+              <input
+                type="date"
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                className="cottagecore-input"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-brown-800 mb-2">
+                Can I stream the rigging process?
               </label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="hasArtwork"
+                    name="canStream"
                     value="yes"
-                    onChange={(e) => setFormData({ ...formData, hasArtwork: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, canStream: e.target.value })}
                     className="text-sakura-500 focus:ring-sakura-400"
                   />
-                  <span className="text-brown-700">Yes, I have artwork</span>
+                  <span className="text-brown-700">Yes</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="hasArtwork"
+                    name="canStream"
                     value="no"
-                    onChange={(e) => setFormData({ ...formData, hasArtwork: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, canStream: e.target.value })}
                     className="text-sakura-500 focus:ring-sakura-400"
                   />
-                  <span className="text-brown-700">No, I need an artist</span>
+                  <span className="text-brown-700">No</span>
                 </label>
               </div>
             </div>
@@ -229,12 +259,23 @@ export default function Live2DContact() {
               />
             </div>
 
+            {submitMessage && (
+              <div className={`mb-6 p-4 rounded-lg text-center font-medium ${
+                submitMessage.includes('successfully')
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {submitMessage}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full cottagecore-btn-primary flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full cottagecore-btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
-              <span>Submit Commission Request</span>
+              <span>{isSubmitting ? 'Sending...' : 'Submit Commission Request'}</span>
             </button>
           </form>
         </div>

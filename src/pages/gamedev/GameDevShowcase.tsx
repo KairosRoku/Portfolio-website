@@ -22,7 +22,13 @@ export default function GameDevShowcase() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setGames(data || []);
+
+      const normalizedData = (data || []).map(game => ({
+        ...game,
+        tech: Array.isArray(game.tech) ? game.tech : [],
+      }));
+
+      setGames(normalizedData);
     } catch (error) {
       console.error('Error fetching games:', error);
     } finally {

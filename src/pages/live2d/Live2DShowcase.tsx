@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Star, X } from 'lucide-react';
+import { Play, X } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
 import { supabase, Live2DModel } from '../../lib/supabase';
@@ -22,7 +22,14 @@ export default function Live2DShowcase() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setModels(data || []);
+
+      const normalizedData = (data || []).map(model => ({
+        ...model,
+        features: Array.isArray(model.features) ? model.features : [],
+        rating: model.rating || 5,
+      }));
+
+      setModels(normalizedData);
     } catch (error) {
       console.error('Error fetching models:', error);
     } finally {
@@ -121,11 +128,6 @@ export default function Live2DShowcase() {
                         {model.type}
                       </span>
                     </div>
-                    <div className="absolute top-4 left-4 flex gap-1">
-                      {Array.from({ length: model.rating }).map((_, i) => (
-                        <Star key={i} size={14} className="text-sakura-400" fill="currentColor" />
-                      ))}
-                    </div>
                   </div>
 
                   <div className="p-6">
@@ -194,11 +196,6 @@ export default function Live2DShowcase() {
               </div>
 
               <div className="p-8 lg:p-12">
-                <div className="flex items-center gap-2 mb-3">
-                  {Array.from({ length: selectedModel.rating }).map((_, i) => (
-                    <Star key={i} size={18} className="text-sakura-400" fill="currentColor" />
-                  ))}
-                </div>
                 <h2 className="text-3xl font-bold text-brown-800 mb-2">{selectedModel.title}</h2>
                 <p className="text-peach-600 mb-6 font-medium">{selectedModel.client} • {selectedModel.year}</p>
 

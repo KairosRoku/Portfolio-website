@@ -8,9 +8,12 @@ export default function PhotographyShowcase() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderEnabled, setOrderEnabled] = useState(true);
+  const [contactEnabled, setContactEnabled] = useState(true);
 
   useEffect(() => {
     fetchPhotos();
+    checkPageSettings();
   }, []);
 
   const fetchPhotos = async () => {
@@ -29,10 +32,32 @@ export default function PhotographyShowcase() {
     }
   };
 
+  const checkPageSettings = async () => {
+    try {
+      const [orderRes, contactRes] = await Promise.all([
+        supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'photography_order_enabled')
+          .maybeSingle(),
+        supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'photography_contact_enabled')
+          .maybeSingle(),
+      ]);
+
+      if (orderRes.data) setOrderEnabled(orderRes.data.value === 'true');
+      if (contactRes.data) setContactEnabled(contactRes.data.value === 'true');
+    } catch (error) {
+      console.error('Error checking settings:', error);
+    }
+  };
+
   const navLinks = [
     { label: 'Portfolio', path: '/photography/showcase' },
-    { label: 'Order', path: '/photography/ordering' },
-    { label: 'Contact', path: '/photography/contact' },
+    ...(orderEnabled ? [{ label: 'Order', path: '/photography/ordering' }] : []),
+    ...(contactEnabled ? [{ label: 'Contact', path: '/photography/contact' }] : []),
   ];
 
   return (
@@ -98,11 +123,11 @@ export default function PhotographyShowcase() {
 
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-50 bg-brown-900/90 backdrop-blur-md flex items-center justify-center p-6"
+          className="fixed inset-0 z-50 bg-brown-900/90 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
           onClick={() => setSelectedPhoto(null)}
         >
           <div
-            className="relative max-w-6xl w-full bg-gradient-to-br from-cottage-50 to-peach-50 rounded-3xl overflow-hidden shadow-2xl border-4 border-sakura-200"
+            className="relative w-full max-h-[90vh] bg-gradient-to-br from-cottage-50 to-peach-50 rounded-3xl overflow-hidden shadow-2xl border-4 border-sakura-200"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -112,16 +137,16 @@ export default function PhotographyShowcase() {
               <X size={24} />
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="aspect-square overflow-hidden bg-brown-100">
+            <div className="flex flex-col lg:flex-row h-full max-h-[90vh]">
+              <div className="w-full lg:w-3/5 overflow-hidden bg-brown-100 flex items-center justify-center">
                 <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
-              <div className="p-8 lg:p-12 flex flex-col justify-center">
+              <div className="w-full lg:w-2/5 p-6 md:p-10 flex flex-col justify-center overflow-y-auto">
                 <div className="mb-4">
                   <span className="px-4 py-2 bg-sakura-100 text-sakura-700 rounded-full text-sm font-semibold">
                     {selectedPhoto.category}

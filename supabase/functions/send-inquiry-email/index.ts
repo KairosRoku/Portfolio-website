@@ -3,7 +3,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 interface InquiryData {
@@ -39,11 +40,17 @@ Deno.serve(async (req: Request) => {
           <div style="background-color: #f9f5f0; padding: 15px; border-radius: 8px; margin-top: 20px;">
             <p><strong>Name:</strong> ${data.name}</p>
             <p><strong>Email:</strong> ${data.email}</p>
-            <p><strong>Discord:</strong> ${data.discord || 'Not provided'}</p>
+            <p><strong>Discord:</strong> ${data.discord || "Not provided"}</p>
             <p><strong>Rig Type:</strong> ${data.rigType}</p>
-            <p><strong>Desired Deadline:</strong> ${data.deadline || 'Not specified'}</p>
-            <p><strong>Can Stream Rigging Process:</strong> ${data.canStream}</p>
-            <p><strong>Reference Links:</strong> ${data.reference || 'Not provided'}</p>
+            <p><strong>Desired Deadline:</strong> ${
+              data.deadline || "Not specified"
+            }</p>
+            <p><strong>Can Stream Rigging Process:</strong> ${
+              data.canStream
+            }</p>
+            <p><strong>Reference Links:</strong> ${
+              data.reference || "Not provided"
+            }</p>
           </div>
           
           <div style="margin-top: 20px;">
@@ -70,7 +77,7 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
         from: "Commission Inquiries <noreply@kairoroku.com>",

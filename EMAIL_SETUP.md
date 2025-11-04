@@ -48,11 +48,13 @@ The Live2D Inquire form uses Supabase Edge Functions to send formatted emails to
 When an inquiry is submitted, you receive an email containing:
 
 **Sender Information:**
+
 - Name (or alias)
 - Email address
 - Discord username
 
 **Project Details:**
+
 - Rig type selected
 - Desired deadline
 - Whether they allow streaming
@@ -60,6 +62,7 @@ When an inquiry is submitted, you receive an email containing:
 - Full project description
 
 **Email Format:**
+
 - Professional HTML layout
 - Cottage-core themed styling
 - Reply-to set to their email address
@@ -70,6 +73,7 @@ When an inquiry is submitted, you receive an email containing:
 ### Email Not Received
 
 **Check:**
+
 1. Resend dashboard shows the email was sent (check email logs)
 2. Check spam/junk folder
 3. Verify `RESEND_API_KEY` is set correctly in Supabase
@@ -78,6 +82,7 @@ When an inquiry is submitted, you receive an email containing:
 ### "Error sending inquiry" Message
 
 **Causes & Solutions:**
+
 1. `RESEND_API_KEY` not set → Add it to Supabase secrets
 2. Invalid API key → Verify key is correct in Resend dashboard
 3. Resend API down → Check [status.resend.com](https://status.resend.com)
@@ -99,11 +104,13 @@ When an inquiry is submitted, you receive an email containing:
 Edit `supabase/functions/send-inquiry-email/index.ts`:
 
 Find this line:
+
 ```typescript
 to: "kairoroku@gmail.com",
 ```
 
 Change to your email:
+
 ```typescript
 to: "your-email@example.com",
 ```
@@ -113,11 +120,13 @@ Then redeploy the function.
 ### Change Sender Name
 
 In the same file, find:
+
 ```typescript
 from: "Commission Inquiries <noreply@kairoroku.com>",
 ```
 
 Change to:
+
 ```typescript
 from: "Your Name <noreply@your-domain.com>",
 ```
@@ -144,12 +153,14 @@ The HTML template is in the same file. Modify the `emailContent` variable to cus
 For a professional setup with your own domain:
 
 1. **Verify Domain in Resend:**
+
    - Go to Resend dashboard
    - Add your domain
    - Add DNS records as instructed
    - Wait for verification (usually <1 hour)
 
 2. **Update Sender Email:**
+
    ```typescript
    from: "Your Name <inquiries@yourdomain.com>",
    ```
@@ -174,25 +185,30 @@ For a professional setup with your own domain:
 ## Volume Limits
 
 **Free Plan (Resend):**
+
 - 100 emails per day
 - Unlimited emails per month
 
 **Paid Plan:**
+
 - Unlimited emails
 - Advanced analytics
 
 ## Best Practices
 
 1. **Keep Email Template Simple:**
+
    - Mobile-friendly design
    - Legible font sizes
    - Clear call-to-action
 
 2. **Respond Quickly:**
+
    - Email has reply-to set to their address
    - Try to respond within 48 hours
 
 3. **Monitor Spam Rate:**
+
    - Keep subject lines professional
    - Don't use ALL CAPS excessively
    - Avoid spam trigger words

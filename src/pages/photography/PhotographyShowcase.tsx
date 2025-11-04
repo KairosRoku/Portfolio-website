@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import SectionHeader from '../../components/SectionHeader';
-import SakuraPetals from '../../components/SakuraPetals';
-import { supabase, Photo } from '../../lib/supabase';
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import SectionHeader from "../../components/SectionHeader";
+import SakuraPetals from "../../components/SakuraPetals";
+import { supabase, Photo } from "../../lib/supabase";
 
 export default function PhotographyShowcase() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
@@ -19,14 +19,14 @@ export default function PhotographyShowcase() {
   const fetchPhotos = async () => {
     try {
       const { data, error } = await supabase
-        .from('photos')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("photos")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setPhotos(data || []);
     } catch (error) {
-      console.error('Error fetching photos:', error);
+      console.error("Error fetching photos:", error);
     } finally {
       setLoading(false);
     }
@@ -36,28 +36,32 @@ export default function PhotographyShowcase() {
     try {
       const [orderRes, contactRes] = await Promise.all([
         supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'photography_order_enabled')
+          .from("site_settings")
+          .select("value")
+          .eq("key", "photography_order_enabled")
           .maybeSingle(),
         supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'photography_contact_enabled')
+          .from("site_settings")
+          .select("value")
+          .eq("key", "photography_contact_enabled")
           .maybeSingle(),
       ]);
 
-      if (orderRes.data) setOrderEnabled(orderRes.data.value === 'true');
-      if (contactRes.data) setContactEnabled(contactRes.data.value === 'true');
+      if (orderRes.data) setOrderEnabled(orderRes.data.value === "true");
+      if (contactRes.data) setContactEnabled(contactRes.data.value === "true");
     } catch (error) {
-      console.error('Error checking settings:', error);
+      console.error("Error checking settings:", error);
     }
   };
 
   const navLinks = [
-    { label: 'Portfolio', path: '/photography/showcase' },
-    ...(orderEnabled ? [{ label: 'Order', path: '/photography/ordering' }] : []),
-    ...(contactEnabled ? [{ label: 'Contact', path: '/photography/contact' }] : []),
+    { label: "Portfolio", path: "/photography/showcase" },
+    ...(orderEnabled
+      ? [{ label: "Order", path: "/photography/ordering" }]
+      : []),
+    ...(contactEnabled
+      ? [{ label: "Contact", path: "/photography/contact" }]
+      : []),
   ];
 
   return (
@@ -71,9 +75,7 @@ export default function PhotographyShowcase() {
             <h1 className="text-4xl md:text-6xl font-bold text-brown-800 mb-4">
               Portfolio
             </h1>
-            <p className="text-lg text-brown-600 max-w-2xl mx-auto">
-              A curated collection of moments frozen in time
-            </p>
+            <p className="text-lg text-brown-600 max-w-2xl mx-auto"></p>
           </div>
 
           {loading ? (
@@ -83,7 +85,9 @@ export default function PhotographyShowcase() {
             </div>
           ) : photos.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-brown-600 text-lg">No photos to display yet.</p>
+              <p className="text-brown-600 text-lg">
+                No photos to display yet.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,8 +108,12 @@ export default function PhotographyShowcase() {
 
                   <div className="absolute inset-0 bg-gradient-to-t from-brown-900/80 via-brown-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-xl font-semibold text-white mb-2">{photo.title}</h3>
-                      <p className="text-peach-100 text-sm">{photo.description}</p>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {photo.title}
+                      </h3>
+                      <p className="text-peach-100 text-sm">
+                        {photo.description}
+                      </p>
                     </div>
                   </div>
 

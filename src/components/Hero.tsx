@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, Sparkles, Gamepad2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
@@ -7,6 +7,8 @@ export default function Hero() {
   const navigate = useNavigate();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [gameDevEnabled, setGameDevEnabled] = useState(true);
+  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const lastMouseXRef = useRef(0);
 
   useEffect(() => {
     checkGameDevEnabled();
@@ -27,11 +29,70 @@ export default function Hero() {
     }
   };
 
+  const getSectionOrder = () => {
+    if (gameDevEnabled) {
+      return ["photography", "live2d", "gamedev"];
+    }
+    return ["photography", "live2d"];
+  };
+
+  const sections = getSectionOrder();
   const widthClass = gameDevEnabled ? "w-1/3" : "w-1/2";
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!hoveredSection) return;
+
+    const currentX = e.clientX;
+    const sectionIndex = sections.indexOf(hoveredSection);
+
+    if (sectionIndex === -1) return;
+
+    const windowWidth = window.innerWidth;
+    const moveThreshold = windowWidth * 0.15;
+
+    if (
+      lastMouseXRef.current > 0 &&
+      currentX < lastMouseXRef.current - moveThreshold
+    ) {
+      if (sectionIndex > 0) {
+        setHoveredSection(sections[sectionIndex - 1]);
+        lastMouseXRef.current = currentX;
+      }
+    } else if (
+      lastMouseXRef.current > 0 &&
+      currentX > lastMouseXRef.current + moveThreshold
+    ) {
+      if (sectionIndex < sections.length - 1) {
+        setHoveredSection(sections[sectionIndex + 1]);
+        lastMouseXRef.current = currentX;
+      }
+    }
+
+    if (lastMouseXRef.current === 0) {
+      lastMouseXRef.current = currentX;
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredSection(null);
+    lastMouseXRef.current = 0;
+  };
+
+  const handleSectionEnter = (section: string) => {
+    setHoveredSection(section);
+    lastMouseXRef.current = 0;
+  };
+
   return (
-    <section className="relative min-h-screen flex overflow-hidden">
+    <section
+      className="relative min-h-screen flex overflow-hidden"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       <div
+        ref={(el) => {
+          if (el) sectionRefs.current.photography = el;
+        }}
         className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
           hoveredSection === "photography"
             ? "w-full"
@@ -39,8 +100,7 @@ export default function Hero() {
             ? widthClass
             : "w-0 opacity-0"
         }`}
-        onMouseEnter={() => setHoveredSection("photography")}
-        onMouseLeave={() => setHoveredSection(null)}
+        onMouseEnter={() => handleSectionEnter("photography")}
         onClick={() => navigate("/photography")}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-sakura-100 via-peach-50 to-cottage-50"></div>
@@ -70,6 +130,9 @@ export default function Hero() {
       </div>
 
       <div
+        ref={(el) => {
+          if (el) sectionRefs.current.live2d = el;
+        }}
         className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
           hoveredSection === "live2d"
             ? "w-full"
@@ -77,8 +140,7 @@ export default function Hero() {
             ? widthClass
             : "w-0 opacity-0"
         }`}
-        onMouseEnter={() => setHoveredSection("live2d")}
-        onMouseLeave={() => setHoveredSection(null)}
+        onMouseEnter={() => handleSectionEnter("live2d")}
         onClick={() => navigate("/live2d")}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-peach-50 via-cottage-50 to-sakura-100"></div>
@@ -111,6 +173,9 @@ export default function Hero() {
 
       {gameDevEnabled && (
         <div
+          ref={(el) => {
+            if (el) sectionRefs.current.gamedev = el;
+          }}
           className={`group relative transition-all duration-700 ease-out flex items-center justify-center cursor-pointer overflow-hidden ${
             hoveredSection === "gamedev"
               ? "w-full"
@@ -118,8 +183,7 @@ export default function Hero() {
               ? "w-1/3"
               : "w-0 opacity-0"
           }`}
-          onMouseEnter={() => setHoveredSection("gamedev")}
-          onMouseLeave={() => setHoveredSection(null)}
+          onMouseEnter={() => handleSectionEnter("gamedev")}
           onClick={() => navigate("/gamedev")}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-cottage-50 via-sakura-50 to-peach-50"></div>

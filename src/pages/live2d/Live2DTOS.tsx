@@ -37,7 +37,7 @@ export default function Live2DTOS() {
               <div className="pl-11 space-y-3 text-brown-700">
                 <p>• 50% upfront payment required to begin work</p>
                 <p>• Remaining 50% due upon completion before final files are delivered</p>
-                <p>• Payment accepted via PayPal, bank transfer, or cryptocurrency</p>
+                <p>• Payment accepted via PayPal, bank transfer, or Gcash for local clients</p>
                 <p>• All prices are in USD unless otherwise specified</p>
               </div>
             </section>
@@ -52,10 +52,9 @@ export default function Live2DTOS() {
                 <h2 className="text-2xl font-bold text-brown-800">Revisions</h2>
               </div>
               <div className="pl-11 space-y-3 text-brown-700">
-                <p>• Up to 3 major revisions included in base price</p>
+                <p>• Up to 2 major revisions included in base price</p>
                 <p>• Minor adjustments throughout the process are welcome</p>
-                <p>• Additional major changes beyond 3 revisions will incur extra fees</p>
-                <p>• Changes must be requested within 7 days of receiving each draft</p>
+                <p>• Additional major changes beyond 3 revisions will incur an extra 20 usd</p>
               </div>
             </section>
 
@@ -70,7 +69,7 @@ export default function Live2DTOS() {
               </div>
               <div className="pl-11 space-y-3 text-brown-700">
                 <p>• Standard turnaround time is 4-8 weeks depending on complexity</p>
-                <p>• Rush orders may be available for an additional fee</p>
+                <p>• Rush orders may be available for an additional 50% fee</p>
                 <p>• Delays due to client-side revision requests will extend timeline</p>
                 <p>• You'll receive regular progress updates throughout the process</p>
               </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import SectionHeader from "../../components/SectionHeader";
 import SakuraPetals from "../../components/SakuraPetals";
+import AdminLogin from "../../components/AdminLogin";
 import { supabase, Photo } from "../../lib/supabase";
 
 export default function PhotographyShowcase() {
@@ -68,6 +69,7 @@ export default function PhotographyShowcase() {
     <div className="min-h-screen bg-gradient-to-br from-sakura-50 via-peach-50 to-cottage-50 relative">
       <SakuraPetals />
       <SectionHeader section="photography" links={navLinks} />
+      <AdminLogin />
 
       <main className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-7xl mx-auto">

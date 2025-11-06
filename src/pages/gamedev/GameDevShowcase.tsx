@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ExternalLink, X, Calendar, Users } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
+import AdminLogin from '../../components/AdminLogin';
 import { supabase, Game } from '../../lib/supabase';
 
 export default function GameDevShowcase() {
@@ -42,6 +43,7 @@ export default function GameDevShowcase() {
     <div className="min-h-screen bg-gradient-to-br from-cottage-50 via-sakura-50 to-peach-50 relative">
       <SakuraPetals />
       <SectionHeader section="gamedev" links={navLinks} />
+      <AdminLogin />
 
       <main className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-7xl mx-auto">

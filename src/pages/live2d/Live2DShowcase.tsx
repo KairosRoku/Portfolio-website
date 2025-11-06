@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Play, X } from "lucide-react";
 import SectionHeader from "../../components/SectionHeader";
 import SakuraPetals from "../../components/SakuraPetals";
+import AdminLogin from "../../components/AdminLogin";
 import { supabase, Live2DModel } from "../../lib/supabase";
 
 export default function Live2DShowcase() {
@@ -68,6 +69,7 @@ export default function Live2DShowcase() {
     <div className="min-h-screen bg-gradient-to-br from-peach-50 via-cottage-50 to-sakura-50 relative">
       <SakuraPetals />
       <SectionHeader section="live2d" links={navLinks} />
+      <AdminLogin />
 
       <main className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-7xl mx-auto">

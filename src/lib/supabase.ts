@@ -51,3 +51,47 @@ export interface SiteSetting {
   value: string;
   updated_at: string;
 }
+
+export interface Inquiry {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  section: string;
+  created_at: string;
+  is_read: boolean;
+}
+
+export interface PhotoInventory {
+  id: string;
+  photo_id: string;
+  size: string;
+  material: string;
+  quantity: number;
+  price: number;
+  created_at: string;
+}
+
+export interface OrderItem {
+  photo_id: string;
+  photo_title: string;
+  size: string;
+  material: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  items: OrderItem[];
+  total_price: number;
+  shipping_address: string;
+  special_instructions: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}

@@ -24,28 +24,36 @@ export default function Live2DContact() {
     setSubmitMessage("");
 
     try {
+      const message = `Discord: ${formData.discord}\nRig Type: ${formData.rigType}\nDeadline: ${formData.deadline}\nCan Stream: ${formData.canStream}\nReference: ${formData.reference}\n\n${formData.message}`;
+
+      await supabase.from("inquiries").insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          message: message,
+          section: "live2d",
+        },
+      ]);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-inquiry-email`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             name: formData.name,
             email: formData.email,
-            discord: formData.discord,
-            rigType: formData.rigType,
-            deadline: formData.deadline,
-            canStream: formData.canStream,
-            reference: formData.reference,
-            message: formData.message,
+            message: message,
+            section: "live2d",
           }),
         }
       );
 
-      if (!response.ok) throw new Error("Failed to send inquiry");
+      if (!response.ok) {
+        console.warn("Email sending had issues, but inquiry was saved");
+      }
 
       setSubmitMessage(
         "Inquiry sent successfully! I will get back to you soon."
@@ -65,7 +73,7 @@ export default function Live2DContact() {
     } catch (error) {
       console.error("Error:", error);
       setSubmitMessage(
-        "Error sending inquiry. Please try again. please email Kairoroku@gmail.com"
+        "Error sending inquiry. Please try again or email Kairoroku@gmail.com"
       );
     } finally {
       setIsSubmitting(false);

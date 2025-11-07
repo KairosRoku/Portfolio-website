@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Edit2, Save, Upload, Settings } from 'lucide-react';
-import { supabase, Photo, Live2DModel, Game, SiteSetting } from '../lib/supabase';
+import { X, Plus, Trash2, Edit2, Save, Upload, Settings, Package, ShoppingBag } from 'lucide-react';
+import { supabase, Photo, Live2DModel, Game, SiteSetting, PhotoInventory, Order } from '../lib/supabase';
 
 interface AdminPanelProps {
   onClose: () => void;
 }
 
-type TabType = 'photos' | 'live2d' | 'games' | 'settings';
+type TabType = 'photos' | 'live2d' | 'games' | 'inventory' | 'orders' | 'settings';
 
 export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('photos');
@@ -14,6 +14,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [models, setModels] = useState<Live2DModel[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [settings, setSettings] = useState<SiteSetting[]>([]);
+  const [inventory, setInventory] = useState<PhotoInventory[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -34,6 +36,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       } else if (activeTab === 'games') {
         const { data } = await supabase.from('games').select('*').order('created_at', { ascending: false });
         setGames(data || []);
+      } else if (activeTab === 'inventory') {
+        const { data } = await supabase.from('photo_inventory').select('*').order('created_at', { ascending: false });
+        setInventory(data || []);
+      } else if (activeTab === 'orders') {
+        const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        setOrders(data || []);
       } else if (activeTab === 'settings') {
         const { data } = await supabase.from('site_settings').select('*').order('key');
         setSettings(data || []);
@@ -109,8 +117,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               </button>
             </div>
 
-            <div className="flex border-b-2 border-cottage-200 bg-white/50">
-              {(['photos', 'live2d', 'games', 'settings'] as TabType[]).map((tab) => (
+            <div className="flex border-b-2 border-cottage-200 bg-white/50 overflow-x-auto">
+              {(['photos', 'live2d', 'games', 'inventory', 'orders', 'settings'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
@@ -118,26 +126,26 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                     setShowAddForm(false);
                     setEditingId(null);
                   }}
-                  className={`flex-1 px-6 py-4 font-semibold transition-all ${
+                  className={`px-4 md:px-6 py-4 font-semibold transition-all whitespace-nowrap text-sm md:text-base ${
                     activeTab === tab
                       ? 'bg-gradient-to-r from-sakura-400 to-peach-400 text-white'
                       : 'text-brown-700 hover:bg-cottage-100'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1).replace('2d', '2D')}
                 </button>
               ))}
             </div>
 
             <div className="p-6">
-              {activeTab !== 'settings' && (
+              {(activeTab === 'photos' || activeTab === 'live2d' || activeTab === 'games' || activeTab === 'inventory') && (
                 <div className="mb-6">
                   <button
                     onClick={() => setShowAddForm(true)}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sakura-400 to-peach-400 text-white rounded-full font-medium hover:scale-105 transition-all shadow-lg"
                   >
                     <Plus size={20} />
-                    Add New {activeTab === 'photos' ? 'Photo' : activeTab === 'live2d' ? 'Model' : 'Game'}
+                    Add New {activeTab === 'photos' ? 'Photo' : activeTab === 'live2d' ? 'Model' : activeTab === 'games' ? 'Game' : 'Inventory Item'}
                   </button>
                 </div>
               )}
@@ -151,6 +159,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   {activeTab === 'photos' && <PhotosSection photos={photos} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
                   {activeTab === 'live2d' && <Live2DSection models={models} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} onVideoUpload={handleVideoUpload} />}
                   {activeTab === 'games' && <GamesSection games={games} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
+                  {activeTab === 'inventory' && <InventorySection inventory={inventory} photos={photos} onDelete={handleDelete} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} />}
+                  {activeTab === 'orders' && <OrdersSection orders={orders} onRefresh={fetchData} />}
                   {activeTab === 'settings' && <SettingsSection settings={settings} onRefresh={fetchData} />}
                 </>
               )}
@@ -868,6 +878,210 @@ function SettingsSection({ settings, onRefresh }: any) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function InventorySection({ inventory, photos, onDelete, onRefresh, showAddForm, setShowAddForm }: any) {
+  const [formData, setFormData] = useState({ photo_id: '', size: '', material: '', quantity: 0, price: 0 });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await supabase.from('photo_inventory').insert([formData]);
+      onRefresh();
+      setFormData({ photo_id: '', size: '', material: '', quantity: 0, price: 0 });
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error saving inventory:', error);
+      alert('Failed to save inventory item');
+    }
+  };
+
+  return (
+    <div>
+      {showAddForm && (
+        <form onSubmit={handleSubmit} className="mb-8 p-6 bg-white rounded-2xl border-2 border-cottage-200 shadow-lg">
+          <h3 className="text-xl font-bold text-brown-800 mb-4">Add Inventory Item</h3>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Photo</label>
+              <select
+                value={formData.photo_id}
+                onChange={(e) => setFormData({ ...formData, photo_id: e.target.value })}
+                className="cottagecore-input"
+                required
+              >
+                <option value="">Select photo...</option>
+                {photos.map((photo: Photo) => (
+                  <option key={photo.id} value={photo.id}>
+                    {photo.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Size</label>
+              <input
+                type="text"
+                value={formData.size}
+                onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                className="cottagecore-input"
+                placeholder="e.g., 8x10"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Material</label>
+              <input
+                type="text"
+                value={formData.material}
+                onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                className="cottagecore-input"
+                placeholder="e.g., Fine Art Paper"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Price</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                className="cottagecore-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-brown-800 mb-2">Quantity</label>
+            <input
+              type="number"
+              value={formData.quantity}
+              onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+              className="cottagecore-input"
+              required
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button type="submit" className="flex-1 cottagecore-btn-primary flex items-center justify-center gap-2">
+              <Save size={20} />
+              Save Item
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddForm(false);
+                setFormData({ photo_id: '', size: '', material: '', quantity: 0, price: 0 });
+              }}
+              className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid grid-cols-1 gap-4">
+        {inventory.map((inv: PhotoInventory) => {
+          const photo = photos.find((p: Photo) => p.id === inv.photo_id);
+          return (
+            <div key={inv.id} className="bg-white rounded-xl border-2 border-cottage-200 p-4 shadow-lg hover:shadow-xl transition-all">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-bold text-brown-800">{photo?.title || 'Unknown Photo'}</h3>
+                  <p className="text-sm text-brown-600">{inv.size} - {inv.material}</p>
+                </div>
+                <button
+                  onClick={() => onDelete(inv.id, 'photo_inventory')}
+                  className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all flex items-center gap-1"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              </div>
+              <div className="grid grid-cols-2 text-sm text-brown-700">
+                <p>Price: <span className="font-semibold">${inv.price}</span></p>
+                <p>Qty: <span className="font-semibold">{inv.quantity}</span></p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OrdersSection({ orders }: any) {
+  return (
+    <div className="space-y-4">
+      {orders.length === 0 ? (
+        <p className="text-brown-600 text-center py-8">No orders yet</p>
+      ) : (
+        orders.map((order: Order) => (
+          <div key={order.id} className="bg-white rounded-xl border-2 border-cottage-200 p-6 shadow-lg">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-brown-800">Order #{order.order_number}</h3>
+                <p className="text-sm text-brown-600">{order.customer_name} ({order.customer_email})</p>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  order.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : order.status === 'processing'
+                      ? 'bg-blue-100 text-blue-700'
+                      : order.status === 'shipped'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-green-100 text-green-700'
+                }`}
+              >
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div>
+                <p className="text-brown-600">Phone</p>
+                <p className="font-medium text-brown-800">{order.customer_phone}</p>
+              </div>
+              <div>
+                <p className="text-brown-600">Total</p>
+                <p className="font-medium text-sakura-600 text-lg">${order.total_price}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-brown-600">Shipping Address</p>
+                <p className="font-medium text-brown-800">{order.shipping_address}</p>
+              </div>
+            </div>
+
+            <div className="border-t-2 border-cottage-200 pt-4">
+              <p className="text-sm font-semibold text-brown-800 mb-2">Items:</p>
+              <div className="space-y-1 text-sm">
+                {(order.items || []).map((item: OrderItem, idx: number) => (
+                  <p key={idx} className="text-brown-700">
+                    {item.photo_title} - {item.size} ({item.material}) x{item.quantity} = ${item.price * item.quantity}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {order.special_instructions && (
+              <div className="mt-4 p-3 bg-cottage-50 rounded-lg border border-cottage-200">
+                <p className="text-xs font-semibold text-brown-800 mb-1">Special Instructions:</p>
+                <p className="text-sm text-brown-700">{order.special_instructions}</p>
+              </div>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 }

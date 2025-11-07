@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import SectionHeader from '../../components/SectionHeader';
 import SakuraPetals from '../../components/SakuraPetals';
+import AdminLogin from '../../components/AdminLogin';
+import { supabase } from '../../lib/supabase';
 
 export default function PhotographyContact() {
   const [formData, setFormData] = useState({
@@ -12,10 +14,63 @@ export default function PhotographyContact() {
     date: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitMessage('');
+
+    try {
+      const message = `Phone: ${formData.phone}\nProject Type: ${formData.projectType}\nPreferred Date: ${formData.date}\n\n${formData.message}`;
+
+      await supabase.from('inquiries').insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          message: message,
+          section: 'photography',
+        },
+      ]);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-inquiry-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            message: message,
+            section: 'photography',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.warn('Email sending had issues, but inquiry was saved');
+      }
+
+      setSubmitMessage('Message sent successfully! I will get back to you soon.');
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        projectType: '',
+        date: '',
+        message: ''
+      });
+
+      setTimeout(() => setSubmitMessage(''), 5000);
+    } catch (error) {
+      console.error('Error:', error);
+      setSubmitMessage('Error sending message. Please try again or contact directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const navLinks = [
@@ -28,6 +83,7 @@ export default function PhotographyContact() {
     <div className="min-h-screen bg-gradient-to-br from-sakura-50 via-peach-50 to-cottage-50 relative">
       <SakuraPetals />
       <SectionHeader section="photography" links={navLinks} />
+      <AdminLogin />
 
       <main className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-6xl mx-auto">
@@ -151,12 +207,25 @@ export default function PhotographyContact() {
               />
             </div>
 
+            {submitMessage && (
+              <div
+                className={`mb-6 p-4 rounded-lg text-center font-medium ${
+                  submitMessage.includes('successfully')
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700'
+                }`}
+              >
+                {submitMessage}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full cottagecore-btn-primary flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full cottagecore-btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
-              <span>Send Message</span>
+              <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
             </button>
           </form>
         </div>

@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'node20'
+        git 'git'
+    }
+
+    environment {
+        DOCKER_IMAGE = "portfolio-app"
+        CONTAINER_NAME = "portfolio-dev"
+        PORT = "3001"
+    }
+
+    triggers {
+        // Automatically runs when new changes are pushed to the Git repository
+        // Note: Generic Webhook Trigger or Polling can be used here
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                sh 'npm test -- --run'
+            }
+        }
+
+        stage('Deploy to DEV') {
+            steps {
+                echo "Deploying to Development Environment (Port ${PORT})..."
+                script {
+                    // Stop and remove existing container if it exists
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+                    
+                    // Build and Run new container
+                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                    sh "docker run -d -p ${PORT}:80 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and Deployment to DEV successful!'
+        }
+        failure {
+            echo 'Build failed. Fix issues before deploying.'
+        }
+    }
+}

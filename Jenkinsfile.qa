@@ -12,7 +12,6 @@ pipeline {
     }
 
     triggers {
-        // Runs automatically every day at 12:00 AM (midnight)
         cron('0 0 * * *')
     }
 

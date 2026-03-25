@@ -1,8 +1,9 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'node18'
+   tools {
+        git 'git'        
+        nodejs 'node18'  
     }
 
     environment {
@@ -13,9 +14,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/YOUR_USERNAME/YOUR_REPO.git'
+                git branch: 'main', url: 'https://github.com/KairosRoku/Portfolio-website.git'
             }
-        }
+        
 
         stage('Install & Test') {
             steps {

@@ -9,6 +9,8 @@ pipeline {
         DOCKER_IMAGE = "portfolio-app"
         CONTAINER_NAME = "portfolio-qa"
         PORT = "3002"
+        VITE_SUPABASE_URL = credentials('VITE_SUPABASE_URL')
+        VITE_SUPABASE_ANON_KEY = credentials('VITE_SUPABASE_ANON_KEY')
     }
 
     triggers {
@@ -28,7 +30,7 @@ pipeline {
                 script {
                     sh "docker stop ${CONTAINER_NAME} || true"
                     sh "docker rm ${CONTAINER_NAME} || true"
-                    sh "docker build -t ${DOCKER_IMAGE}:qa ."
+                    sh "docker build --build-arg VITE_SUPABASE_URL=${VITE_SUPABASE_URL} --build-arg VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY} -t ${DOCKER_IMAGE}:qa ."
                     sh "docker run -d -p ${PORT}:80 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}:qa"
                 }
             }

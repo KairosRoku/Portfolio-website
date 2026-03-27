@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { ExternalLink, X, Calendar, Users } from 'lucide-react';
-import SectionHeader from '../../components/SectionHeader';
-import SakuraPetals from '../../components/SakuraPetals';
-import AdminLogin from '../../components/AdminLogin';
-import { supabase, Game } from '../../lib/supabase';
+import { useState, useEffect } from "react";
+import { ExternalLink, X, Calendar, Users } from "lucide-react";
+import SectionHeader from "../../components/SectionHeader";
+import SakuraPetals from "../../components/SakuraPetals";
+import AdminLogin from "../../components/AdminLogin";
+import { supabase, Game } from "../../lib/supabase";
 
 export default function GameDevShowcase() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -17,27 +17,27 @@ export default function GameDevShowcase() {
   const fetchGames = async () => {
     try {
       const { data, error } = await supabase
-        .from('games')
-        .select('*')
-        .eq('is_enabled', true)
-        .order('created_at', { ascending: false });
+        .from("games")
+        .select("*")
+        .eq("is_enabled", true)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const normalizedData = (data || []).map(game => ({
+      const normalizedData = (data || []).map((game) => ({
         ...game,
         tech: Array.isArray(game.tech) ? game.tech : [],
       }));
 
       setGames(normalizedData);
     } catch (error) {
-      console.error('Error fetching games:', error);
+      console.error("Error fetching games:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const navLinks = [{ label: 'Back', path: '/' }];
+  const navLinks = [{ label: "Back", path: "/" }];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cottage-50 via-sakura-50 to-peach-50 relative">
@@ -52,7 +52,7 @@ export default function GameDevShowcase() {
               Game Portfolio
             </h1>
             <p className="text-lg text-brown-600 max-w-2xl mx-auto">
-              Interactive experiences crafted with passion
+              LEEEEERRRROOOYY asdw
             </p>
           </div>
 
@@ -83,9 +83,15 @@ export default function GameDevShowcase() {
                   </div>
 
                   <div className="p-6">
-                    <h3 className="text-xl font-semibold text-brown-800 mb-1">{game.title}</h3>
-                    <p className="text-brown-600 text-sm font-medium mb-3">{game.genre}</p>
-                    <p className="text-brown-700 text-sm mb-4 leading-relaxed">{game.description}</p>
+                    <h3 className="text-xl font-semibold text-brown-800 mb-1">
+                      {game.title}
+                    </h3>
+                    <p className="text-brown-600 text-sm font-medium mb-3">
+                      {game.genre}
+                    </p>
+                    <p className="text-brown-700 text-sm mb-4 leading-relaxed">
+                      {game.description}
+                    </p>
 
                     <div className="flex flex-wrap gap-2">
                       {game.tech.map((tech, techIndex) => (
@@ -136,8 +142,12 @@ export default function GameDevShowcase() {
                 </span>
               </div>
 
-              <h2 className="text-3xl font-bold text-brown-800 mb-4">{selectedGame.title}</h2>
-              <p className="text-lg text-brown-700 leading-relaxed mb-6">{selectedGame.description}</p>
+              <h2 className="text-3xl font-bold text-brown-800 mb-4">
+                {selectedGame.title}
+              </h2>
+              <p className="text-lg text-brown-700 leading-relaxed mb-6">
+                {selectedGame.description}
+              </p>
 
               <div className="flex items-center gap-6 mb-6 text-brown-700">
                 <span className="flex items-center gap-2">
@@ -151,7 +161,9 @@ export default function GameDevShowcase() {
               </div>
 
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-brown-800 mb-3">Technology Stack</h3>
+                <h3 className="text-lg font-semibold text-brown-800 mb-3">
+                  Technology Stack
+                </h3>
                 <div className="flex flex-wrap gap-3">
                   {selectedGame.tech.map((tech, idx) => (
                     <span

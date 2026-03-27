@@ -9,8 +9,8 @@ pipeline {
         DOCKER_IMAGE = "portfolio-app"
         CONTAINER_NAME = "portfolio-prod"
         PORT = "3003"
-        VITE_SUPABASE_URL = credentials('SUPABASE_URL')
-        VITE_SUPABASE_ANON_KEY = credentials('SUPABASE_ANON_KEY')
+        VITE_SUPABASE_URL = credentials('VITE_SUPABASE_URL')
+        VITE_SUPABASE_ANON_KEY = credentials('VITE_SUPABASE_ANON_KEY')
     }
 
     // Handled manually, so no triggers section here.

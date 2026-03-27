@@ -10,8 +10,8 @@ pipeline {
         CONTAINER_NAME = "portfolio-dev"
         PORT = "3001"
         // Pull Jenkins credentials
-        VITE_SUPABASE_URL = credentials('SUPABASE_URL')
-        VITE_SUPABASE_ANON_KEY = credentials('SUPABASE_ANON_KEY')
+        VITE_SUPABASE_URL = credentials('VITE_SUPABASE_URL')
+        VITE_SUPABASE_ANON_KEY = credentials('VITE_SUPABASE_ANON_KEY')
     }
 
     triggers {

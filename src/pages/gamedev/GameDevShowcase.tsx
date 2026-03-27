@@ -52,7 +52,7 @@ export default function GameDevShowcase() {
               Game Portfolio
             </h1>
             <p className="text-lg text-brown-600 max-w-2xl mx-auto">
-              LEEEEERRRROOOYY JEEEEENNNKIIINNSSS !!!!!!!!!!
+              LEEEEERRRROOOYY
             </p>
           </div>
 

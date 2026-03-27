@@ -52,7 +52,7 @@ export default function GameDevShowcase() {
               Game Portfolio
             </h1>
             <p className="text-lg text-brown-600 max-w-2xl mx-auto">
-              Interactive experiences crafted with passion
+              Ginulo ko ulit page mo
             </p>
           </div>
 

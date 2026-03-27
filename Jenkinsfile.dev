@@ -9,6 +9,9 @@ pipeline {
         DOCKER_IMAGE = "portfolio-app"
         CONTAINER_NAME = "portfolio-dev"
         PORT = "3001"
+        // Pull Jenkins credentials
+        VITE_SUPABASE_URL = credentials('SUPABASE_URL')
+        VITE_SUPABASE_ANON_KEY = credentials('SUPABASE_ANON_KEY')
     }
 
     triggers {
@@ -44,8 +47,8 @@ pipeline {
                     sh "docker stop ${CONTAINER_NAME} || true"
                     sh "docker rm ${CONTAINER_NAME} || true"
                     
-                    // Build and Run new container
-                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                    // Build and Run new container with build arguments
+                    sh "docker build --build-arg VITE_SUPABASE_URL=${VITE_SUPABASE_URL} --build-arg VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY} -t ${DOCKER_IMAGE}:latest ."
                     sh "docker run -d -p ${PORT}:80 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
                 }
             }

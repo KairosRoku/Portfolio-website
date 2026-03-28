@@ -40,37 +40,46 @@ export default function SectionHeader({ section, links }: SectionHeaderProps) {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-gradient-to-r ${bgGradient} backdrop-blur-md border-b-2 border-brown-200 shadow-lg`}>
       <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className={`flex items-center gap-3 px-4 py-2 bg-white/60 hover:bg-white/80 backdrop-blur-sm rounded-full transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg group`}
-          >
-            <ArrowLeft className="text-brown-600 group-hover:-translate-x-1 transition-transform" size={20} />
-            <span className="font-medium text-brown-700">Home</span>
-          </button>
+        <div className="grid grid-cols-3 items-center">
+          <div className="flex justify-start">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-3 px-4 py-2 bg-white/60 hover:bg-white/80 backdrop-blur-sm rounded-full transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg group"
+            >
+              <ArrowLeft
+                className="text-brown-600 group-hover:-translate-x-1 transition-transform"
+                size={20}
+              />
+              <span className="font-medium text-brown-700">Home</span>
+            </button>
+          </div>
 
-          <div className="flex items-center gap-2">
-            <div className={`w-10 h-10 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center shadow-md`}>
+          <div className="flex justify-center">
+            <div
+              className={`w-10 h-10 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center shadow-md shrink-0`}
+            >
               <Icon className="text-white" size={20} />
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-4">
-            {links.map((link) => (
-              <button
-                key={link.path}
-                onClick={() => navigate(link.path)}
-                className={`px-5 py-2 bg-white/60 hover:bg-gradient-to-r ${gradient} hover:text-white backdrop-blur-sm rounded-full font-medium text-brown-700 transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg`}
-              >
-                {link.label}
+          <div className="flex justify-end items-center gap-4">
+            <nav className="hidden md:flex items-center gap-2">
+              {links.map((link) => (
+                <button
+                  key={link.path}
+                  onClick={() => navigate(link.path)}
+                  className={`px-4 py-2 bg-white/60 hover:bg-gradient-to-r ${gradient} hover:text-white backdrop-blur-sm rounded-full font-medium text-brown-700 transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-md text-sm whitespace-nowrap`}
+                >
+                  {link.label}
+                </button>
+              ))}
+            </nav>
+            
+            <div className="md:hidden">
+              <button className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-md">
+                <span className="text-brown-700 font-medium">Menu</span>
               </button>
-            ))}
-          </nav>
-
-          <div className="md:hidden">
-            <button className="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-md">
-              <span className="text-brown-700 font-medium">Menu</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>

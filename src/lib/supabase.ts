@@ -4,10 +4,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  console.error('CRITICAL: Missing Supabase environment variables! Site will be disconnected.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder'
+);
 
 export interface Photo {
   id: string;
@@ -25,6 +28,7 @@ export interface Live2DModel {
   type: string;
   image_url: string;
   video_url: string;
+  model_url: string;
   features: string[];
   rating: number;
   year: string;

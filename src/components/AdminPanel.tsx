@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Edit2, Save, Upload, Settings, Package, ShoppingBag } from 'lucide-react';
-import { supabase, Photo, Live2DModel, Game, SiteSetting, PhotoInventory, Order } from '../lib/supabase';
-import { uploadFile, deleteFile, validateFileType, validateFileSize, IMAGE_ALLOWED_TYPES, VIDEO_ALLOWED_TYPES, MAX_IMAGE_SIZE_MB, MAX_VIDEO_SIZE_MB } from '../lib/storage';
+import { supabase, Photo, Live2DModel, Game, SiteSetting, PhotoInventory, Order, OrderItem } from '../lib/supabase';
+import { uploadFile, uploadModelFile, deleteFile, validateFileType, validateFileSize, IMAGE_ALLOWED_TYPES, VIDEO_ALLOWED_TYPES, MAX_IMAGE_SIZE_MB, MAX_VIDEO_SIZE_MB } from '../lib/storage';
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -427,6 +427,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
     type: '',
     image_url: '',
     video_url: '',
+    model_url: '',
     features: '',
     rating: 5,
     year: new Date().getFullYear().toString(),
@@ -494,6 +495,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
         type: formData.type,
         image_url: formData.image_url,
         video_url: formData.video_url,
+        model_url: formData.model_url,
         features: featuresArray,
         rating: formData.rating || 5,
         year: formData.year || new Date().getFullYear().toString(),
@@ -516,7 +518,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
       }
 
       onRefresh();
-      setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() });
+      setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() });
       setShowAddForm(false);
       onEdit(null);
       alert('Model saved successfully!');
@@ -534,6 +536,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
       type: model.type,
       image_url: model.image_url,
       video_url: model.video_url,
+      model_url: model.model_url || '',
       features: Array.isArray(model.features) ? model.features.join(', ') : '',
       rating: model.rating,
       year: model.year,
@@ -620,6 +623,76 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
                 placeholder="Or paste YouTube/video URL"
               />
             </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Live2D Model (.model3.json URL)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.model_url}
+                  onChange={(e) => setFormData({ ...formData, model_url: e.target.value })}
+                  className="cottagecore-input"
+                  placeholder="Paste URL to .model3.json"
+                />
+                <label className="flex items-center gap-2 px-4 py-2 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-xl cursor-pointer transition-all whitespace-nowrap">
+                  <Upload size={18} />
+                  <span>{uploading ? 'Uploading...' : 'Upload Folder'}</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    {...{ webkitdirectory: "", directory: "" } as any}
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setUploading(true);
+                        const files = Array.from(e.target.files);
+                        const modelFile = files.find(f => f.name.endsWith('.model3.json'));
+                        
+                        if (!modelFile) {
+                          alert('No .model3.json found in selected folder');
+                          setUploading(false);
+                          return;
+                        }
+
+                        // Use the directory name of the model3.json file or a random folder
+                        const timestamp = Date.now();
+                        const modelFolderName = modelFile.webkitRelativePath.split('/')[0] || `model_${timestamp}`;
+                        const rootFolder = `models/${timestamp}_${modelFolderName}`;
+                        
+                        let modelPath = '';
+
+                        try {
+                          for (const file of files) {
+                            // Preserving relative path if available
+                            const relativePath = file.webkitRelativePath 
+                              ? file.webkitRelativePath 
+                              : file.name;
+                            
+                            const storagePath = `${rootFolder}/${relativePath}`;
+                            const res = await uploadModelFile(file, 'live2d-models', storagePath);
+                            
+                            if (file.name.endsWith('.model3.json')) {
+                              modelPath = res.url;
+                            }
+                          }
+                          
+                          if (modelPath) {
+                            setFormData({ ...formData, model_url: modelPath });
+                            alert('Folder uploaded successfully!');
+                          }
+                        } catch (err) {
+                          console.error('Upload error:', err);
+                          alert('Failed to upload some files. Please try again.');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] text-brown-500 mt-1">Note: Selecting a folder will upload its entire contents. Ensure a .model3.json is present.</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -665,9 +738,9 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
               <Save size={20} />
               Save Model
             </button>
-            <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
-              Cancel
-            </button>
+        <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
+          Cancel
+        </button>
           </div>
         </form>
       )}

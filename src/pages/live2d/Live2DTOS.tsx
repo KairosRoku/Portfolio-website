@@ -4,7 +4,8 @@ import SakuraPetals from "../../components/SakuraPetals";
 
 export default function Live2DTOS() {
   const navLinks = [
-    { label: "Showcase", path: "/live2d/showcase" },
+    { label: "All Works", path: "/live2d" },
+    { label: "NSFW", path: "/live2d/nsfw" },
     { label: "Inquire", path: "/live2d/contact" },
     { label: "Terms", path: "/live2d/tos" },
   ];

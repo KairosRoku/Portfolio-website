@@ -1,0 +1,26 @@
+{
+  "name": "@hazart-pkg/live2d-core",
+  "version": "1.0.1",
+  "description": "Live2D Cubism Core v5",
+  "author": "Live2D",
+  "main": "live2dcubismcore.js",
+  "types": "./live2dcubismcore.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hazart29/live2d-core-v5.git"
+  },
+  "keywords": [
+    "live2d",
+    "live2d-core",
+    "cubism"
+  ],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hazart29/live2d-core-v5/issues"
+  },
+  "homepage": "https://github.com/hazart29/live2d-core-v5#readme"
+}

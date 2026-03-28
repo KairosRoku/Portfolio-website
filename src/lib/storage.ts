@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type BucketName = 'photos' | 'live2d-images' | 'live2d-videos' | 'games';
+export type BucketName = 'photos' | 'live2d-images' | 'live2d-videos' | 'games' | 'live2d-models';
 
 export interface UploadResult {
   url: string;
@@ -23,6 +23,41 @@ export const uploadFile = async (
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path);
+
+    return {
+      url: publicUrl,
+      path: data.path,
+    };
+  } catch (error) {
+    console.error('Upload error:', error);
+    return {
+      url: '',
+      path: '',
+      error: error instanceof Error ? error.message : 'Upload failed',
+    };
+  }
+};
+
+export const uploadModelFile = async (
+  file: File,
+  bucket: BucketName,
+  filePath: string
+): Promise<UploadResult> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
       });
 
     if (error) {

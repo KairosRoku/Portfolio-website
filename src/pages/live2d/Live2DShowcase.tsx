@@ -1,19 +1,29 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Play, X } from "lucide-react";
 import SectionHeader from "../../components/SectionHeader";
 import SakuraPetals from "../../components/SakuraPetals";
 import AdminLogin from "../../components/AdminLogin";
 import { supabase, Live2DModel } from "../../lib/supabase";
 
-export default function Live2DShowcase() {
-  const [selectedType, setSelectedType] = useState("All");
+export default function Live2DShowcase({ filter }: { filter?: string }) {
+  const navigate = useNavigate();
+  const [selectedType, setSelectedType] = useState(filter || "All");
   const [selectedModel, setSelectedModel] = useState<Live2DModel | null>(null);
   const [models, setModels] = useState<Live2DModel[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchModels();
-  }, []);
+  }, [filter]);
+
+  useEffect(() => {
+    if (filter) {
+      setSelectedType(filter);
+    } else {
+      setSelectedType("All");
+    }
+  }, [filter]);
 
   const fetchModels = async () => {
     try {
@@ -38,15 +48,29 @@ export default function Live2DShowcase() {
     }
   };
 
-  const types = ["All", ...Array.from(new Set(models.map((m) => m.type)))];
+  const dbTypes = Array.from(new Set(models.map((m) => m.type)));
+  const visibleTypes = dbTypes.filter(t => filter === 'NSFW' ? t === 'NSFW' : t !== 'NSFW');
+  
+  // Always ensure Vtubers and Animation are in the filter list for All Works
+  if (filter !== 'NSFW') {
+    if (!visibleTypes.includes('Vtubers')) visibleTypes.push('Vtubers');
+    if (!visibleTypes.includes('Animation')) visibleTypes.push('Animation');
+  }
+  
+  if (filter && !visibleTypes.includes(filter)) {
+    visibleTypes.push(filter);
+  }
+  
+  const types = filter === 'NSFW' ? [filter] : ["All", ...visibleTypes];
 
   const filteredModels =
     selectedType === "All"
-      ? models
+      ? models.filter((m) => m.type !== "NSFW")
       : models.filter((m) => m.type === selectedType);
 
   const navLinks = [
-    { label: "Showcase", path: "/live2d/showcase" },
+    { label: "All Works", path: "/live2d" },
+    { label: "NSFW", path: "/live2d/nsfw" },
     { label: "Inquire", path: "/live2d/contact" },
     { label: "Terms", path: "/live2d/tos" },
   ];
@@ -75,7 +99,7 @@ export default function Live2DShowcase() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold text-brown-800 mb-4">
-              Model Showcase
+              {selectedType === "All" ? "All Works" : selectedType}
             </h1>
             <p className="text-lg text-brown-600 max-w-2xl mx-auto"></p>
           </div>
@@ -112,7 +136,7 @@ export default function Live2DShowcase() {
               {filteredModels.map((model, index) => (
                 <div
                   key={model.id}
-                  onClick={() => setSelectedModel(model)}
+                  onClick={() => navigate(`/live2d/model/${model.id}`)}
                   className="group relative overflow-hidden rounded-2xl bg-white border-2 border-cottage-200 hover:border-peach-300 transition-all duration-500 cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-2xl animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -146,6 +170,11 @@ export default function Live2DShowcase() {
                       {model.client} • {model.year}
                     </p>
                     <div className="flex flex-wrap gap-2">
+                      {model.type === "NSFW" && (
+                        <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full border border-red-200 font-bold">
+                          NSFW
+                        </span>
+                      )}
                       {model.features.slice(0, 3).map((feature, idx) => (
                         <span
                           key={idx}
@@ -218,10 +247,15 @@ export default function Live2DShowcase() {
                   {selectedModel.client} • {selectedModel.year}
                 </p>
 
-                <div className="mb-6">
+                <div className="mb-6 flex gap-3">
                   <span className="px-4 py-2 bg-peach-100 text-peach-700 border-2 border-peach-300 rounded-full text-sm font-semibold">
                     {selectedModel.type}
                   </span>
+                  {selectedModel.type === "NSFW" && (
+                    <span className="px-4 py-2 bg-red-100 text-red-700 border-2 border-red-300 rounded-full text-sm font-semibold animate-pulse">
+                      NSFW
+                    </span>
+                  )}
                 </div>
 
                 <div className="mb-8">

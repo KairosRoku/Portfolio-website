@@ -18,13 +18,14 @@ const puppeteer = require('puppeteer');
     
     // Evaluate in browser context to poke around the PIXI instance
     await page.evaluate(() => {
-      // Find the PIXI canvas
-      const canvas = document.querySelector('canvas');
-      console.log('Canvas found:', !!canvas, canvas ? `w: ${canvas.width}, h: ${canvas.height}` : 'No canvas');
-      if (canvas) {
-        // Can we access window.__PIXI_APP__ ? Sometimes PIXI exposes this if devtools is on
-        console.log('Window window.innerWidth:', window.innerWidth);
-      }
+      const p = window.PIXI;
+      if (!p) { console.log('NO PIXI'); return; }
+      
+      // We can grab the canvas from the window or just assume it's there
+      // Wait, Live2DModelDetail hides PIXI app inside appRef but maybe we can find it?
+      // PIXI 6 doesn't store global __PIXI_APP__ by default unless devtools installed.
+      // But we can check window arrays, or we can just run a quick lookup!
+      // Easier: just look at the network requests for `.model3.json`!
     });
 
     await page.screenshot({path: 'frontend_screenshot_probe.png'});

@@ -10,9 +10,14 @@ export default function AdminLogin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState('');
   const [storedPassword, setStoredPassword] = useState('');
+  
+  // Security
+  const [isAuthorizedIp, setIsAuthorizedIp] = useState(false);
+  const AUTHORIZED_IPS = ['112.201.130.49']; // Your current exact IP address
 
   useEffect(() => {
     fetchAdminPassword();
+    verifyClientIp();
   }, []);
 
   useEffect(() => {
@@ -24,6 +29,19 @@ export default function AdminLogin() {
     }
     return () => clearTimeout(timer);
   }, [clickCount]);
+
+  const verifyClientIp = async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      // Allow localhost specifically for testing, plus authorized IPs
+      if (AUTHORIZED_IPS.includes(data.ip) || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+         setIsAuthorizedIp(true);
+      }
+    } catch (e) {
+      console.error('IP Verification failed.');
+    }
+  };
 
   const fetchAdminPassword = async () => {
     try {
@@ -72,6 +90,10 @@ export default function AdminLogin() {
 
   if (isAuthenticated) {
     return <AdminPanel onClose={handleClose} />;
+  }
+
+  if (!isAuthorizedIp) {
+    return null; // The button is completely hidden to all unapproved visitors
   }
 
   return (

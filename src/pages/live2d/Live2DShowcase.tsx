@@ -34,11 +34,30 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
 
       if (error) throw error;
 
-      const normalizedData = (data || []).map((model) => ({
-        ...model,
-        features: Array.isArray(model.features) ? model.features : [],
-        rating: model.rating || 5,
-      }));
+      const normalizedData = (data || []).map((model) => {
+        let actualType = model.type;
+        const subTypes = ['fullbody', 'halfbody', 'vtuber', 'vtubers'];
+        const isVtuber = subTypes.includes(model.type?.toLowerCase()?.trim());
+        
+        // We'll treat Animation as its own thing or if they want it under vtubers:
+        // User requested: "fullbody,halfbody and animation are under vtubers"
+        const isAnimation = model.type?.toLowerCase()?.trim() === 'animation';
+        
+        let features = Array.isArray(model.features) ? [...model.features] : [];
+        if (isVtuber || isAnimation) {
+           actualType = 'VTubers';
+           if (!features.includes(model.type)) {
+              features.push(model.type);
+           }
+        }
+        
+        return {
+          ...model,
+          type: actualType,
+          features,
+          rating: model.rating || 5,
+        };
+      });
 
       setModels(normalizedData);
     } catch (error) {

@@ -1205,15 +1205,39 @@ function SettingsSection({ settings, onRefresh }: any) {
             <div className="flex-1">
               <h3 className="font-bold text-brown-800 mb-1">{setting.key}</h3>
               {editingKey === setting.key ? (
-                <input
-                  type="text"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="cottagecore-input"
-                  autoFocus
-                />
+                setting.key.toLowerCase().includes('password') ? (
+                  <input
+                    type="password"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="cottagecore-input"
+                    autoFocus
+                  />
+                ) : setting.value === 'true' || setting.value === 'false' || editValue === 'true' || editValue === 'false' ? (
+                  <div className="flex items-center mt-2">
+                    <button
+                      onClick={() => setEditValue(editValue === 'true' ? 'false' : 'true')}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none ${editValue === 'true' ? 'bg-sakura-500' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${editValue === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                    <span className="ml-3 font-semibold text-brown-700">
+                      {editValue === 'true' ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="cottagecore-input"
+                    autoFocus
+                  />
+                )
               ) : (
-                <p className="text-brown-600">{setting.value}</p>
+                <p className="text-brown-600">
+                  {setting.key.toLowerCase().includes('password') ? '••••••••••••' : setting.value === 'true' ? 'Enabled' : setting.value === 'false' ? 'Disabled' : setting.value}
+                </p>
               )}
             </div>
             <div className="ml-4">

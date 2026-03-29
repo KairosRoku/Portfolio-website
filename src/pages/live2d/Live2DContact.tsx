@@ -1,10 +1,27 @@
-import { useState } from "react";
-import { Mail, Clock, DollarSign, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Mail, Clock, DollarSign, Send, MessageSquare } from "lucide-react";
 import SectionHeader from "../../components/SectionHeader";
 import SakuraPetals from "../../components/SakuraPetals";
 import { supabase } from "../../lib/supabase";
 
 export default function Live2DContact() {
+  const [settings, setSettings] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from("site_settings").select("*");
+    if (data) {
+      const settingsMap = data.reduce(
+        (acc, curr) => ({ ...acc, [curr.key]: curr.value }),
+        {}
+      );
+      setSettings(settingsMap as Record<string, string>);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -110,15 +127,33 @@ export default function Live2DContact() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold text-brown-800 mb-4">
-              Commission Inquire
+              {settings['inquiries_enabled'] === 'false' ? "Commissions Closed" : "Commission Inquire"}
             </h1>
             <p className="text-brown-600 text-lg max-w-2xl mx-auto">
-              Ready to bring your character to life? Fill out the form and I'll
-              get back to you soon
+              {settings['inquiries_enabled'] === 'false'
+                ? "I am not currently accepting direct commission requests. You can still reach out to me via my socials below!"
+                : "Ready to bring your character to life? Fill out the form and I'll get back to you soon"}
             </p>
           </div>
 
-          <div className="mb-12">
+          {settings['inquiries_enabled'] === 'false' ? (
+            <div className="flex flex-col items-center justify-center p-12 bg-white/80 backdrop-blur-sm border-2 border-cottage-200 rounded-3xl shadow-xl mt-8 animate-fade-in-up">
+                <p className="text-brown-800 text-xl font-bold mb-8 text-center">Find me around the web for updates:</p>
+                <div className="flex flex-wrap justify-center gap-6">
+                  <a href={settings['social_vgen'] || '#'} target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-[#EEF2FF] text-[#6366F1] hover:bg-[#E0E7FF] rounded-2xl shadow-lg transition-all hover:scale-110 flex items-center justify-center font-bold text-2xl tracking-wider">
+                    VGen
+                  </a>
+                  <a href={settings['social_discord'] || '#'} target="_blank" rel="noopener noreferrer" className="p-4 bg-[#EEF2FF] text-[#5865F2] hover:bg-[#E0E7FF] rounded-2xl shadow-lg transition-all hover:scale-110 flex items-center justify-center">
+                    <MessageSquare size={36} />
+                  </a>
+                  <a href={settings['social_twitter'] || '#'} target="_blank" rel="noopener noreferrer" className="px-6 py-4 bg-[#F3F4F6] text-[#1DA1F2] hover:bg-[#E5E7EB] rounded-2xl shadow-lg transition-all hover:scale-110 flex items-center justify-center font-bold text-4xl leading-none">
+                    𝕏
+                  </a>
+                </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-12">
             <h2 className="text-2xl font-bold text-brown-800 text-center mb-6">
               Pricing Packages
             </h2>
@@ -345,8 +380,10 @@ export default function Live2DContact() {
               <span>
                 {isSubmitting ? "Sending..." : "Submit Commission Request"}
               </span>
-            </button>
-          </form>
+              </button>
+            </form>
+          </>
+        )}
         </div>
       </main>
     </div>

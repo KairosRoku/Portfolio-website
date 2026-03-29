@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import * as PIXI from 'pixi.js';
 import { supabase, Live2DModel as Live2DModelType } from '../../lib/supabase';
 import SectionHeader from '../../components/SectionHeader';
-import { Loader2, ArrowLeft, AlertCircle, ZoomIn, Move, MousePointerClick } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle, ZoomIn, Move, MousePointerClick, MessageSquare } from 'lucide-react';
 
 // Required for pixi-live2d-display
 (window as any).PIXI = PIXI;
@@ -14,6 +14,7 @@ export default function Live2DModelDetail() {
   const [modelData, setModelData] = useState<Live2DModelType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<Record<string, string>>({});
   
   // VTuber Expressions State
   const [expressions, setExpressions] = useState<{name: string, file: string, params: any[]}[]>([]);
@@ -38,6 +39,12 @@ export default function Live2DModelDetail() {
         .select('*')
         .eq('id', id)
         .single();
+        
+      const { data: settingsData } = await supabase.from('site_settings').select('key, value');
+      if (settingsData) {
+        const settingsMap = settingsData.reduce((acc, curr) => ({...acc, [curr.key]: curr.value}), {});
+        setSettings(settingsMap as Record<string, string>);
+      }
 
       if (error) throw error;
       
@@ -381,7 +388,7 @@ export default function Live2DModelDetail() {
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-brown-900/50 backdrop-blur-md z-50 transition-all duration-300">
             <Loader2 className="w-14 h-14 text-peach-400 animate-spin mb-6" />
             <h3 className="text-2xl font-bold text-white tracking-widest uppercase mb-2 animate-pulse">Initializing Assets</h3>
-            <p className="text-peach-200 font-medium z-10 max-w-sm text-center text-sm px-6">Downloading HD Live2D Textures & Mesh Geometries. Please wait, this may take a moment on slow connections...</p>
+            <p className="text-peach-200 font-medium z-10 max-w-sm text-center text-sm px-6">Preparing model environment. Please wait, this may take a moment on slow connections...</p>
           </div>
         )}
         
@@ -409,13 +416,27 @@ export default function Live2DModelDetail() {
         ) : modelData?.video_url ? (
           <div className="w-full h-full p-8 flex items-center justify-center">
             <div className="w-full max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-peach-200">
-              <iframe
-                src={modelData.video_url.includes('youtube.com') 
-                  ? modelData.video_url.replace('watch?v=', 'embed/') 
-                  : modelData.video_url}
-                className="w-full h-full"
-                allowFullScreen
-              />
+              {modelData.video_url.includes('youtube.com') || modelData.video_url.includes('youtu.be') ? (
+                <iframe
+                  src={modelData.video_url.includes('youtube.com') 
+                    ? modelData.video_url.replace('watch?v=', 'embed/') 
+                    : modelData.video_url}
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={modelData.video_url}
+                  className="w-full h-full object-cover bg-black"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls
+                  controlsList="nodownload"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -438,12 +459,26 @@ export default function Live2DModelDetail() {
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 w-full px-4">
-              <button
-                onClick={() => navigate('/live2d/contact')}
-                className="w-full md:w-auto px-8 py-2 md:py-3 bg-gradient-to-r from-sakura-400 to-peach-400 text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
-              >
-                Inquire Now
-              </button>
+              {settings['inquiries_enabled'] === 'false' ? (
+                <div className="flex justify-center gap-3">
+                  <a href={settings['social_vgen'] || '#'} target="_blank" rel="noopener noreferrer" className="px-5 py-3 bg-[#EEF2FF] text-[#6366F1] hover:bg-[#E0E7FF] rounded-xl shadow-md transition-all hover:scale-105 flex items-center justify-center font-bold text-sm tracking-wider">
+                    VGen
+                  </a>
+                  <a href={settings['social_discord'] || '#'} target="_blank" rel="noopener noreferrer" className="p-3 bg-[#EEF2FF] text-[#5865F2] hover:bg-[#E0E7FF] rounded-xl shadow-md transition-all hover:scale-105 flex items-center justify-center">
+                    <MessageSquare size={20} />
+                  </a>
+                  <a href={settings['social_twitter'] || '#'} target="_blank" rel="noopener noreferrer" className="px-4 py-3 bg-[#F3F4F6] text-[#1DA1F2] hover:bg-[#E5E7EB] rounded-xl shadow-md transition-all hover:scale-105 flex items-center justify-center font-bold text-xl leading-none">
+                    𝕏
+                  </a>
+                </div>
+              ) : (
+                <button
+                  onClick={() => navigate('/live2d/contact')}
+                  className="w-full md:w-auto px-8 py-2 md:py-3 bg-gradient-to-r from-sakura-400 to-peach-400 text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+                >
+                  Inquire Now
+                </button>
+              )}
               <button
                 onClick={() => navigate('/live2d')}
                 className="w-full md:w-auto flex items-center justify-center gap-2 text-brown-600 hover:text-brown-800 transition-colors font-medium text-xs md:text-sm py-2"

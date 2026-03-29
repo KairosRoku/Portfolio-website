@@ -36,19 +36,22 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
 
       const normalizedData = (data || []).map((model) => {
         let actualType = model.type;
-        const subTypes = ['fullbody', 'halfbody', 'vtuber', 'vtubers'];
+        const subTypes = ['full body', 'half body', 'chibi'];
         const isVtuber = subTypes.includes(model.type?.toLowerCase()?.trim());
-        
-        // We'll treat Animation as its own thing or if they want it under vtubers:
-        // User requested: "fullbody,halfbody and animation are under vtubers"
         const isAnimation = model.type?.toLowerCase()?.trim() === 'animation';
         
         let features = Array.isArray(model.features) ? [...model.features] : [];
-        if (isVtuber || isAnimation) {
+        if (model.type === 'NSFW' && !features.includes('NSFW')) {
+            features.push('NSFW');
+        }
+
+        if (isVtuber) {
            actualType = 'VTubers';
            if (!features.includes(model.type)) {
               features.push(model.type);
            }
+        } else if (isAnimation) {
+           actualType = 'Animation';
         }
         
         return {
@@ -70,9 +73,9 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
   const dbTypes = Array.from(new Set(models.map((m) => m.type)));
   const visibleTypes = dbTypes.filter(t => filter === 'NSFW' ? t === 'NSFW' : t !== 'NSFW');
   
-  // Always ensure Vtubers and Animation are in the filter list for All Works
+  // Always ensure VTubers and Animation are in the filter list for All Works
   if (filter !== 'NSFW') {
-    if (!visibleTypes.includes('Vtubers')) visibleTypes.push('Vtubers');
+    if (!visibleTypes.includes('VTubers')) visibleTypes.push('VTubers');
     if (!visibleTypes.includes('Animation')) visibleTypes.push('Animation');
   }
   
@@ -83,9 +86,11 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
   const types = filter === 'NSFW' ? [filter] : ["All", ...visibleTypes];
 
   const filteredModels =
-    selectedType === "All"
-      ? models.filter((m) => m.type !== "NSFW")
-      : models.filter((m) => m.type === selectedType);
+    filter === 'NSFW'
+      ? models.filter((m) => m.features.includes("NSFW") || m.type === "NSFW")
+      : selectedType === "All"
+      ? models.filter((m) => !m.features.includes("NSFW") && m.type !== "NSFW")
+      : models.filter((m) => m.type === selectedType && !m.features.includes("NSFW") && m.type !== "NSFW");
 
   const navLinks = [
     { label: "All Works", path: "/live2d" },
@@ -118,14 +123,15 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
                  return <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={model.title} />;
              }
          }
-         // Render the 0.1s frame of the MP4 native video
+         // Render autoplaying MP4 native video
          return (
              <video 
-                 src={`${model.video_url}#t=0.1`} 
+                 src={model.video_url} 
                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none" 
                  muted 
+                 loop
+                 autoPlay
                  playsInline
-                 preload="metadata"
              />
          );
      }
@@ -217,7 +223,7 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
                       {model.client} • {model.year}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {model.type === "NSFW" && (
+                      {model.features.includes("NSFW") && (
                         <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full border border-red-200 font-bold">
                           NSFW
                         </span>

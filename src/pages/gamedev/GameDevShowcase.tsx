@@ -176,10 +176,22 @@ export default function GameDevShowcase() {
                 </div>
               </div>
 
-              <button className="w-full flex items-center justify-center gap-2 cottagecore-btn-primary">
-                <ExternalLink size={20} />
-                <span>View Project</span>
-              </button>
+              {selectedGame.link ? (
+                <a 
+                  href={selectedGame.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-full flex items-center justify-center gap-2 cottagecore-btn-primary"
+                >
+                  <ExternalLink size={20} />
+                  <span>View Project</span>
+                </a>
+              ) : (
+                <button disabled className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-brown-200 text-brown-500 rounded-full font-bold cursor-not-allowed">
+                  <ExternalLink size={20} />
+                  <span>Link Unavailable</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

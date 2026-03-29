@@ -45,6 +45,7 @@ export interface Game {
   status: string;
   year: string;
   players: string;
+  link?: string;
   is_enabled: boolean;
   created_at: string;
 }

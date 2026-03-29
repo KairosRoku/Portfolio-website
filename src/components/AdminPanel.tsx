@@ -492,6 +492,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
     features: '',
     rating: 5,
     year: new Date().getFullYear().toString(),
+    is_nsfw: false,
   });
   const [dragActive, setDragActive] = useState(false);
   const [dragType, setDragType] = useState<'image' | 'video' | null>(null);
@@ -539,7 +540,14 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
     }
 
     try {
-      const featuresArray = formData.features.split(',').map(f => f.trim()).filter(f => f);
+      let featuresArray = formData.features.split(',').map(f => f.trim()).filter(f => f);
+      
+      if (formData.is_nsfw && !featuresArray.includes('NSFW')) {
+          featuresArray.push('NSFW');
+      }
+      if (!formData.is_nsfw) {
+          featuresArray = featuresArray.filter(f => f !== 'NSFW');
+      }
       const modelData = {
         title: formData.title,
         client: formData.client,
@@ -569,7 +577,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
       }
 
       onRefresh();
-      setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() });
+      setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString(), is_nsfw: false });
       setShowAddForm(false);
       onEdit(null);
       alert('Model saved successfully!');
@@ -588,9 +596,10 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
       image_url: model.image_url,
       video_url: model.video_url,
       model_url: model.model_url || '',
-      features: Array.isArray(model.features) ? model.features.join(', ') : '',
+      features: Array.isArray(model.features) ? model.features.filter(f => f !== 'NSFW').join(', ') : '',
       rating: model.rating,
       year: model.year,
+      is_nsfw: Array.isArray(model.features) ? model.features.includes('NSFW') : false,
     });
     onEdit(model.id);
     setShowAddForm(true);
@@ -826,6 +835,10 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
           <div className="mb-4">
             <label className="block text-sm font-semibold text-brown-800 mb-2">Features (comma-separated)</label>
             <input type="text" value={formData.features} onChange={(e) => setFormData({ ...formData, features: e.target.value })} className="cottagecore-input" placeholder="Feature 1, Feature 2, Feature 3" />
+            <div className="flex items-center gap-2 mt-3">
+              <input type="checkbox" id="isNsfw" checked={formData.is_nsfw} onChange={(e) => setFormData({ ...formData, is_nsfw: e.target.checked })} className="w-5 h-5 rounded border-red-300 text-red-500 focus:ring-red-500" />
+              <label htmlFor="isNsfw" className="text-sm font-bold text-red-800">Mark as NSFW Restricted</label>
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -833,7 +846,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
               <Save size={20} />
               Save Model
             </button>
-        <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
+        <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', model_url: '', features: '', rating: 5, year: new Date().getFullYear().toString(), is_nsfw: false }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
           Cancel
         </button>
           </div>
@@ -876,6 +889,7 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
     status: 'In Development',
     year: new Date().getFullYear().toString(),
     players: 'Single Player',
+    link: '',
     is_enabled: true,
   });
   const [dragActive, setDragActive] = useState(false);
@@ -931,6 +945,7 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
         status: formData.status || 'In Development',
         year: formData.year || new Date().getFullYear().toString(),
         players: formData.players || 'Single Player',
+        link: formData.link || null,
         is_enabled: formData.is_enabled !== undefined ? formData.is_enabled : true,
       };
 
@@ -951,7 +966,7 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
       }
 
       onRefresh();
-      setFormData({ title: '', genre: '', description: '', image_url: '', tech: '', status: 'In Development', year: new Date().getFullYear().toString(), players: 'Single Player', is_enabled: true });
+      setFormData({ title: '', genre: '', description: '', image_url: '', tech: '', status: 'In Development', year: new Date().getFullYear().toString(), players: 'Single Player', link: '', is_enabled: true });
       setShowAddForm(false);
       onEdit(null);
       alert('Game saved successfully!');
@@ -972,6 +987,7 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
       status: game.status,
       year: game.year,
       players: game.players,
+      link: game.link || '',
       is_enabled: game.is_enabled,
     });
     onEdit(game.id);
@@ -1067,7 +1083,7 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
               <Save size={20} />
               Save Game
             </button>
-            <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', genre: '', description: '', image_url: '', tech: '', status: 'In Development', year: new Date().getFullYear().toString(), players: 'Single Player', is_enabled: true }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
+            <button type="button" onClick={() => { setShowAddForm(false); onEdit(null); setFormData({ title: '', genre: '', description: '', image_url: '', tech: '', status: 'In Development', year: new Date().getFullYear().toString(), players: 'Single Player', link: '', is_enabled: true }); }} className="flex-1 px-6 py-3 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-full font-medium transition-all">
               Cancel
             </button>
           </div>

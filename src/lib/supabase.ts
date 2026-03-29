@@ -25,6 +25,7 @@ export interface Live2DModel {
   type: string;
   image_url: string;
   video_url: string;
+  model_url: string;
   features: string[];
   rating: number;
   year: string;

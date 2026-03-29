@@ -3,6 +3,7 @@ import { Play, X } from "lucide-react";
 import SectionHeader from "../../components/SectionHeader";
 import SakuraPetals from "../../components/SakuraPetals";
 import AdminLogin from "../../components/AdminLogin";
+import Live2DModalViewer from "../../components/Live2DModalViewer";
 import { supabase, Live2DModel } from "../../lib/supabase";
 
 export default function Live2DShowcase() {
@@ -24,11 +25,26 @@ export default function Live2DShowcase() {
 
       if (error) throw error;
 
-      const normalizedData = (data || []).map((model) => ({
-        ...model,
-        features: Array.isArray(model.features) ? model.features : [],
-        rating: model.rating || 5,
-      }));
+      const normalizedData = (data || []).map((model) => {
+        let actualType = model.type;
+        const subTypes = ['fullbody', 'halfbody', 'animation', 'vtuber', 'vtubers'];
+        const isVtuber = subTypes.includes(model.type?.toLowerCase()?.trim());
+        
+        let features = Array.isArray(model.features) ? [...model.features] : [];
+        if (isVtuber) {
+           actualType = 'VTubers';
+           if (!features.includes(model.type)) {
+              features.push(model.type);
+           }
+        }
+        
+        return {
+          ...model,
+          type: actualType,
+          features,
+          rating: model.rating || 5,
+        };
+      });
 
       setModels(normalizedData);
     } catch (error) {
@@ -180,8 +196,10 @@ export default function Live2DShowcase() {
             </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="aspect-square overflow-hidden relative bg-brown-100">
-                {selectedModel.video_url &&
+              <div className="aspect-square overflow-hidden relative bg-brown-100 rounded-l-3xl">
+                {selectedModel.model_url ? (
+                  <Live2DModalViewer modelUrl={selectedModel.model_url} />
+                ) : selectedModel.video_url &&
                 getVideoEmbedUrl(selectedModel.video_url) ? (
                   getVideoEmbedUrl(selectedModel.video_url)?.includes(
                     "youtube.com"

@@ -93,9 +93,18 @@ export default function Live2DModelDetail() {
         
         if (!isMounted) return;
 
-        const model = await Live2DModel.from(modelData.model_url);
+        let model;
+        try {
+          console.log(`Starting Live2D Model fetch from: ${modelData.model_url}`);
+          model = await Live2DModel.from(modelData.model_url);
+        } catch (loaderErr: any) {
+          console.error("Live2DModel.from inner resolution error:", loaderErr);
+          throw new Error(`Failed to parse Model JSON or load Textures from Supabase. Ensure all images are fully uploaded. Inner error: ${loaderErr.message}`);
+        }
+        
         if (!isMounted) return;
         
+        console.log("Model successfully mounted into PIXI container");
         modelRef.current = model;
         app.stage.addChild(model as any);
         
@@ -208,27 +217,26 @@ export default function Live2DModelDetail() {
             const dy = e.data.global.y - dragStart.y;
             (model as any).x = modelStartPos.x + dx;
             (model as any).y = modelStartPos.y + dy;
-          } else {
-            // Absolute tracking mapping the mouse to the physical canvas limits 
-            // bypassing PIXI's DPI resolution scaling bugs
-            const canvas = appRef.current?.view as HTMLCanvasElement;
-            if (canvas) {
-                const rect = canvas.getBoundingClientRect();
-                const rawX = e.data.global.x; // in logical units
-                const rawY = e.data.global.y;
-                
-                // rect.width and rect.height might be css pixels but e.data.global is logical
-                // A very safe logical fallback is standardizing against the PIXI renderer screen
-                const sw = app.renderer.screen.width;
-                const sh = app.renderer.screen.height;
-                
-                targetNormX = (rawX / sw) * 2 - 1;
-                targetNormY = (1 - (rawY / sh)) * 2 - 1; 
-                // Y inversion: Top of screen = 1 (UP), Bottom = -1 (DOWN)
-                
-                targetNormX = Math.max(-1, Math.min(1, targetNormX));
-                targetNormY = Math.max(-1, Math.min(1, targetNormY));
-            }
+          } 
+          
+          // Absolute tracking mapping the mouse to the physical canvas limits 
+          // bypassing PIXI's DPI resolution scaling bugs (works seamlessly alongside dragging)
+          const canvas = appRef.current?.view as HTMLCanvasElement;
+          if (canvas) {
+              const rawX = e.data.global.x; // in logical units
+              const rawY = e.data.global.y;
+              
+              // rect.width and rect.height might be css pixels but e.data.global is logical
+              // A very safe logical fallback is standardizing against the PIXI renderer screen
+              const sw = app.renderer.screen.width;
+              const sh = app.renderer.screen.height;
+              
+              targetNormX = (rawX / sw) * 2 - 1;
+              targetNormY = (1 - (rawY / sh)) * 2 - 1; 
+              // Y inversion: Top of screen = 1 (UP), Bottom = -1 (DOWN)
+              
+              targetNormX = Math.max(-1, Math.min(1, targetNormX));
+              targetNormY = Math.max(-1, Math.min(1, targetNormY));
           }
         });
 
@@ -332,7 +340,7 @@ export default function Live2DModelDetail() {
         setError('Loading is taking longer than expected. Please check your connection or the model files.');
         setLoading(false);
       }
-    }, 15000); // 15s timeout
+    }, 90000); // Massive 90s timeout explicitly for slow mobile networking and deep textures
 
     return () => clearTimeout(timer);
   }, [loading, error]);
@@ -370,18 +378,19 @@ export default function Live2DModelDetail() {
       {/* Model Interaction Area */}
       <div className="relative w-full h-[calc(100vh-6rem)]">
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-brown-900/40 backdrop-blur-sm z-50">
-            <Loader2 className="w-12 h-12 text-peach-400 animate-spin mb-4" />
-            <p className="text-peach-200 font-medium z-10 font-bold">Initializing Live2D Space...</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-brown-900/50 backdrop-blur-md z-50 transition-all duration-300">
+            <Loader2 className="w-14 h-14 text-peach-400 animate-spin mb-6" />
+            <h3 className="text-2xl font-bold text-white tracking-widest uppercase mb-2 animate-pulse">Initializing Assets</h3>
+            <p className="text-peach-200 font-medium z-10 max-w-sm text-center text-sm px-6">Downloading HD Live2D Textures & Mesh Geometries. Please wait, this may take a moment on slow connections...</p>
           </div>
         )}
         
         {!loading && !error && modelData?.model_url && (
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl z-10 pointer-events-none border border-peach-200 animate-slide-up">
-            <div className="flex flex-col gap-2 text-sm text-brown-800 font-medium">
+          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md rounded-2xl p-3 md:p-4 shadow-xl z-10 pointer-events-none border border-peach-200 animate-slide-up hidden sm:block">
+            <div className="flex flex-col gap-1 md:gap-2 text-xs md:text-sm text-brown-800 font-medium">
               <div className="flex items-center gap-2">
                 <ZoomIn className="w-4 h-4 text-peach-500" />
-                <span><strong>Scroll</strong> to zoom in/out</span>
+                <span><strong>Scroll/Pinch</strong> to zoom in/out</span>
               </div>
               <div className="flex items-center gap-2">
                 <Move className="w-4 h-4 text-peach-500" />
@@ -389,7 +398,7 @@ export default function Live2DModelDetail() {
               </div>
               <div className="flex items-center gap-2">
                 <MousePointerClick className="w-4 h-4 text-peach-500" />
-                <span><strong>Hover</strong> to track cursor</span>
+                <span><strong>Hold/Hover</strong> to track cursor</span>
               </div>
             </div>
           </div>
@@ -416,30 +425,30 @@ export default function Live2DModelDetail() {
         )}
         
         {/* Info Overlay */}
-        <div className="absolute bottom-8 left-8 right-8 pointer-events-none">
-          <div className="max-w-xl bg-white/80 backdrop-blur-md p-6 rounded-3xl border-2 border-peach-200 shadow-xl pointer-events-auto animate-fade-in-up">
-            <h1 className="text-3xl font-bold text-brown-800 mb-2">{modelData?.title}</h1>
-            <p className="text-peach-600 font-semibold mb-3">{modelData?.client} • {modelData?.type}</p>
-            <div className="flex flex-wrap gap-2 mb-6">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-full md:bottom-8 pointer-events-none z-20 flex justify-center">
+          <div className="w-full max-w-xl bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-3xl border-2 border-peach-200 shadow-xl pointer-events-auto animate-fade-in-up flex flex-col items-center text-center">
+            <h1 className="text-xl md:text-3xl font-bold text-brown-800 mb-1 md:mb-2">{modelData?.title}</h1>
+            <p className="text-peach-600 font-semibold mb-2 md:mb-3 text-sm md:text-base">{modelData?.client} • {modelData?.type}</p>
+            <div className="flex flex-wrap justify-center gap-1 md:gap-2 mb-3 md:mb-6">
               {modelData?.features.map((feature, idx) => (
-                <span key={idx} className="px-3 py-1 bg-sakura-100 text-sakura-700 rounded-full text-sm font-medium border border-sakura-200">
+                <span key={idx} className="px-2 py-1 md:px-3 md:py-1 bg-sakura-100 text-sakura-700 rounded-full text-xs md:text-sm font-medium border border-sakura-200">
                   {feature}
                 </span>
               ))}
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 w-full px-4">
               <button
                 onClick={() => navigate('/live2d/contact')}
-                className="w-full py-3 bg-gradient-to-r from-sakura-400 to-peach-400 text-white rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                className="w-full md:w-auto px-8 py-2 md:py-3 bg-gradient-to-r from-sakura-400 to-peach-400 text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
               >
                 Inquire Now
               </button>
               <button
                 onClick={() => navigate('/live2d')}
-                className="flex items-center justify-center gap-2 text-brown-600 hover:text-brown-800 transition-colors font-medium text-sm"
+                className="w-full md:w-auto flex items-center justify-center gap-2 text-brown-600 hover:text-brown-800 transition-colors font-medium text-xs md:text-sm py-2"
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={14} />
                 Back to Showcase
               </button>
             </div>
@@ -448,7 +457,7 @@ export default function Live2DModelDetail() {
         
         {/* Expression Toggle Panel */}
         {expressions.length > 0 && (
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl z-20 pointer-events-auto border border-peach-200 animate-slide-up flex flex-col gap-3 max-h-[80vh] overflow-y-auto w-48">
+          <div className="absolute top-4 left-4 md:top-4 md:left-4 bg-white/90 backdrop-blur-md rounded-2xl p-3 shadow-xl z-20 pointer-events-auto border border-peach-200 animate-slide-up flex flex-col gap-2 max-h-[40vh] md:max-h-[80vh] overflow-y-auto w-32 md:w-48">
              <h3 className="font-bold text-brown-800 text-[13px] mb-1">VTuber Expressions</h3>
              <div className="flex flex-col gap-2">
                 <button

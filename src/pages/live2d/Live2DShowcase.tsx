@@ -108,6 +108,38 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
     return url;
   };
 
+  const renderThumbnail = (model: any) => {
+     // If there is no explicit image, but there is a video, parse the video thumbnail!
+     if (!model.image_url && model.video_url) {
+         if (model.video_url.includes('youtube.com') || model.video_url.includes('youtu.be')) {
+             const ytMatch = model.video_url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+             const videoId = ytMatch ? ytMatch[1] : null;
+             if (videoId) {
+                 return <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={model.title} />;
+             }
+         }
+         // Render the 0.1s frame of the MP4 native video
+         return (
+             <video 
+                 src={`${model.video_url}#t=0.1`} 
+                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none" 
+                 muted 
+                 playsInline
+                 preload="metadata"
+             />
+         );
+     }
+     
+     // Default image mapping
+     return (
+        <img
+          src={model.image_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop'}
+          alt={model.title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        />
+     );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-peach-50 via-cottage-50 to-sakura-50 relative">
       <SakuraPetals />
@@ -160,11 +192,7 @@ export default function Live2DShowcase({ filter }: { filter?: string }) {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="aspect-square overflow-hidden relative">
-                    <img
-                      src={model.image_url}
-                      alt={model.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
+                    {renderThumbnail(model)}
                     <div className="absolute inset-0 bg-gradient-to-t from-brown-900/60 via-brown-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-peach-400 group-hover:bg-peach-500 flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                         <Play

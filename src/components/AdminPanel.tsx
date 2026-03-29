@@ -55,14 +55,75 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   };
 
   const handleDelete = async (id: string, table: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!confirm('Are you sure you want to delete this item? This will also permanently erase its associated files from the storage buckets!')) return;
 
     try {
+      // 1. Fetch item to get file URLs securely so we don't leave orphaned files on Supabase Disks
+      const { data: item } = await supabase.from(table).select('*').eq('id', id).single();
+      
+      if (item) {
+        // Helper to extract strict storage path from a Supabase public URL
+        const extractPath = (url: string, bucket: string) => {
+            if (!url) return null;
+            const marker = '/public/' + bucket + '/';
+            const parts = url.split(marker);
+            if (parts.length === 2) return parts[1];
+            return null;
+        };
+
+        if (table === 'photos') {
+            const p = extractPath(item.image_url, 'photos');
+            if (p) supabase.storage.from('photos').remove([p]);
+        } else if (table === 'games') {
+            const p = extractPath(item.image_url, 'games');
+            if (p) supabase.storage.from('games').remove([p]);
+        } else if (table === 'live2d_models') {
+            const pImg = extractPath(item.image_url, 'live2d-images');
+            if (pImg) supabase.storage.from('live2d-images').remove([pImg]);
+            
+            const pVid = extractPath(item.video_url, 'live2d-videos');
+            if (pVid) await supabase.storage.from('live2d-videos').remove([pVid]);
+
+            const pMod = extractPath(item.model_url, 'live2d-models');
+            if (pMod) {
+                // Extract root directory logic if it was a dragged folder structure (e.g. models/170_name/...)
+                const segments = pMod.split('/');
+                if (segments.length >= 2 && segments[0] === 'models') {
+                    const rootDir = `${segments[0]}/${segments[1]}`;
+                    
+                    // Supabase Bulk Deleting: recursively scan to completely wipe all internal sub-directories
+                    const wipeFolder = async (dirPath: string) => {
+                        const { data: files } = await supabase.storage.from('live2d-models').list(dirPath);
+                        if (!files) return;
+                        
+                        const toDelete: string[] = [];
+                        for (const f of files) {
+                            if (!f.id || f.id === null) {
+                                // Missing ID implies this is an inner subdirectory
+                                await wipeFolder(`${dirPath}/${f.name}`);
+                            } else {
+                                toDelete.push(`${dirPath}/${f.name}`);
+                            }
+                        }
+                        if (toDelete.length > 0) {
+                            await supabase.storage.from('live2d-models').remove(toDelete);
+                        }
+                    };
+                    
+                    await wipeFolder(rootDir);
+                } else {
+                    // It was a direct file 
+                    await supabase.storage.from('live2d-models').remove([pMod]);
+                }
+            }
+        }
+      }
+
       await supabase.from(table).delete().eq('id', id);
       fetchData();
     } catch (error) {
-      console.error('Error deleting:', error);
-      alert('Failed to delete item');
+      console.error('Error deleting item and files:', error);
+      alert('Failed to delete item completely. Associated files may still exist.');
     }
   };
 
@@ -472,16 +533,6 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.image_url) {
-      alert('Please upload an image first');
-      return;
-    }
-
-    if (!formData.video_url) {
-      alert('Please upload a video first');
-      return;
-    }
-
     if (!formData.title || !formData.client || !formData.type) {
       alert('Please fill in all required fields: Title, Client, and Type');
       return;
@@ -589,7 +640,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-brown-800 mb-2">Video</label>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Video (Optional for VTubers)</label>
               <div
                 onDragEnter={(e) => handleDrag(e, 'video')}
                 onDragLeave={(e) => handleDrag(e, 'video')}
@@ -625,38 +676,41 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm font-semibold text-brown-800 mb-2">Live2D Model (.model3.json URL)</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.model_url}
-                  onChange={(e) => setFormData({ ...formData, model_url: e.target.value })}
-                  className="cottagecore-input"
-                  placeholder="Paste URL to .model3.json"
-                />
-                <label className="flex items-center gap-2 px-4 py-2 bg-cottage-200 hover:bg-cottage-300 text-brown-800 rounded-xl cursor-pointer transition-all whitespace-nowrap">
-                  <Upload size={18} />
-                  <span>{uploading ? 'Uploading...' : 'Upload Folder'}</span>
+              <label className="block text-sm font-semibold text-brown-800 mb-2">Live2D Model Repository</label>
+              
+              <div className="relative border-2 border-dashed rounded-2xl p-4 md:p-8 text-center transition-all bg-white border-cottage-300 hover:border-sakura-400 hover:bg-sakura-50 group overflow-hidden">
+                {!uploading && !formData.model_url && (
                   <input
                     type="file"
-                    className="hidden"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     multiple
                     {...{ webkitdirectory: "", directory: "" } as any}
                     onChange={async (e) => {
                       if (e.target.files && e.target.files.length > 0) {
                         setUploading(true);
                         const files = Array.from(e.target.files);
-                        const modelFile = files.find(f => f.name.endsWith('.model3.json'));
+                        const modelFile = files.find(f => {
+                          const lowerName = f.name.toLowerCase();
+                          return lowerName.endsWith('.model3.json') || lowerName.endsWith('.model.json');
+                        });
                         
                         if (!modelFile) {
-                          alert('No .model3.json found in selected folder');
+                          alert('No .model3.json or .model.json found in selected folder! Ensure you are dropping the full export folder.');
                           setUploading(false);
                           return;
                         }
 
+                        // Prevent flattened directory structures (dragging files manually instead of the folder icon)
+                        const isFlattened = files.every(f => !f.webkitRelativePath);
+                        if (isFlattened && files.length > 1 && files.some(f => f.name.endsWith('.png'))) {
+                            alert('CRITICAL ERROR: You dragged individual files which destroys the Live2D folder structure! You MUST drag the actual outer Folder itself (the one containing the textures folder and .model3.json) into the box so the internal paths are preserved.');
+                            setUploading(false);
+                            return;
+                        }
+
                         // Use the directory name of the model3.json file or a random folder
                         const timestamp = Date.now();
-                        const modelFolderName = modelFile.webkitRelativePath.split('/')[0] || `model_${timestamp}`;
+                        const modelFolderName = (modelFile.webkitRelativePath.split('/')[0] || `model_${timestamp}`).replace(/\s+/g, '_');
                         const rootFolder = `models/${timestamp}_${modelFolderName}`;
                         
                         let modelPath = '';
@@ -671,7 +725,12 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
                             const storagePath = `${rootFolder}/${relativePath}`;
                             const res = await uploadModelFile(file, 'live2d-models', storagePath);
                             
-                            if (file.name.endsWith('.model3.json')) {
+                            if (res.error) {
+                                throw new Error(`Failed to upload ${file.name}: ${res.error}`);
+                            }
+                            
+                            const lowerName = file.name.toLowerCase();
+                            if (lowerName.endsWith('.model3.json') || lowerName.endsWith('.model.json')) {
                               modelPath = res.url;
                             }
                           }
@@ -679,6 +738,8 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
                           if (modelPath) {
                             setFormData({ ...formData, model_url: modelPath });
                             alert('Folder uploaded successfully!');
+                          } else {
+                            alert('Folder uploaded, but the .model3.json link failed to generate! Ensure there were no server rejection errors.');
                           }
                         } catch (err) {
                           console.error('Upload error:', err);
@@ -689,9 +750,43 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
                       }
                     }}
                   />
-                </label>
+                )}
+
+                {uploading ? (
+                  <div className="py-6">
+                    <div className="inline-block w-10 h-10 border-4 border-peach-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-brown-800 font-bold text-lg">Extracting & Uploading Folder...</p>
+                    <p className="text-brown-500 text-sm mt-1">Please do not close the window. This may take a while depending on the size of the VTuber textures.</p>
+                  </div>
+                ) : formData.model_url ? (
+                  <div className="py-2">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-green-200">
+                         <span className="text-green-600 text-2xl font-bold">✓</span>
+                    </div>
+                    <p className="text-green-700 font-bold text-lg mb-1">Model Uploaded Successfully</p>
+                    <p className="text-green-600 text-xs mb-4 max-w-sm mx-auto truncate px-4">{formData.model_url}</p>
+                    <button type="button" onClick={() => setFormData({ ...formData, model_url: '' })} className="relative z-20 px-6 py-2 bg-red-50 text-red-600 rounded-full text-sm font-bold border border-red-200 hover:bg-red-100 hover:text-red-700 transition-colors shadow-sm">Remove & Upload Different Folder</button>
+                  </div>
+                ) : (
+                  <div className="py-6">
+                    <Upload className="mx-auto text-cottage-400 mb-3 group-hover:scale-110 group-hover:text-peach-400 transition-all duration-300" size={56} />
+                    <p className="text-brown-800 font-bold mb-1 text-xl">Drag & Drop Live2D Folder Here</p>
+                    <p className="text-brown-600 text-sm font-medium">Or click anywhere inside this box to browse</p>
+                    <p className="text-xs text-brown-400 mt-4 max-w-md mx-auto">Upload the entire unzipped export folder. The tool will automatically parse the physics, textures, and .model3.json natively.</p>
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] text-brown-500 mt-1">Note: Selecting a folder will upload its entire contents. Ensure a .model3.json is present.</p>
+              
+              <div className="mt-3">
+                 <label className="block text-xs font-semibold text-brown-700 mb-1">Direct Target URL Fallback (If manual upload fails)</label>
+                 <input
+                    type="text"
+                    value={formData.model_url}
+                    onChange={(e) => setFormData({ ...formData, model_url: e.target.value })}
+                    className="cottagecore-input text-xs py-2 bg-cottage-50"
+                    placeholder="https://..."
+                 />
+              </div>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Edit2, Save, Upload, Settings, Package, ShoppingBag } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Plus, Trash2, Edit2, Save, Upload, Settings, Package, ShoppingBag, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase, Photo, Live2DModel, Game, SiteSetting, PhotoInventory, Order, OrderItem } from '../lib/supabase';
 import { uploadFile, uploadModelFile, deleteFile, validateFileType, validateFileSize, IMAGE_ALLOWED_TYPES, VIDEO_ALLOWED_TYPES, MAX_IMAGE_SIZE_MB, MAX_VIDEO_SIZE_MB } from '../lib/storage';
 
@@ -25,8 +25,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     fetchData();
   }, [activeTab]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       if (activeTab === 'photos') {
         const { data } = await supabase.from('photos').select('*').order('created_at', { ascending: false });
@@ -50,7 +50,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -120,10 +120,56 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       }
 
       await supabase.from(table).delete().eq('id', id);
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error('Error deleting item and files:', error);
       alert('Failed to delete item completely. Associated files may still exist.');
+    }
+  };
+
+  const handleMove = async (table: string, currentIndex: number, direction: 'up' | 'down') => {
+    let items: any[] = [];
+    if (table === 'photos') items = [...photos];
+    else if (table === 'live2d_models') items = [...models];
+    else if (table === 'games') items = [...games];
+    else return;
+
+    if (direction === 'up' && currentIndex <= 0) return;
+    if (direction === 'down' && currentIndex >= items.length - 1) return;
+
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    // 1. Optimistic Array UI Swap (Instantly visual, no loading screen fetch required)
+    const tempItem = items[currentIndex];
+    items[currentIndex] = items[swapIndex];
+    items[swapIndex] = tempItem;
+
+    if (table === 'photos') setPhotos(items);
+    else if (table === 'live2d_models') setModels(items);
+    else if (table === 'games') setGames(items);
+
+    // 2. Silent Database Synchronization 
+    const currentItem = items[swapIndex]; 
+    const targetItem = items[currentIndex];
+
+    try {
+      const currentCreated = currentItem.created_at;
+      const targetCreated = targetItem.created_at;
+
+      // Physically swap their intrinsic internal property timestamps so consecutive multi-clicks function correctly
+      currentItem.created_at = targetCreated;
+      targetItem.created_at = currentCreated;
+
+      const { error: e1 } = await supabase.from(table).update({ created_at: targetCreated }).eq('id', currentItem.id);
+      if (e1) throw e1;
+
+      const { error: e2 } = await supabase.from(table).update({ created_at: currentCreated }).eq('id', targetItem.id);
+      if (e2) throw e2;
+
+    } catch (error) {
+      console.error('Error reordering item:', error);
+      alert('Failed to reorder item on mapping database layer!');
+      fetchData(true); // Rollback natively UI to truth only if an explicit engine breakdown occurs
     }
   };
 
@@ -238,12 +284,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </div>
               ) : (
                 <>
-                  {activeTab === 'photos' && <PhotosSection photos={photos} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
-                  {activeTab === 'live2d' && <Live2DSection models={models} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} onVideoUpload={handleVideoUpload} />}
-                  {activeTab === 'games' && <GamesSection games={games} onDelete={handleDelete} onEdit={setEditingId} editingId={editingId} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
-                  {activeTab === 'inventory' && <InventorySection inventory={inventory} photos={photos} onDelete={handleDelete} onRefresh={fetchData} showAddForm={showAddForm} setShowAddForm={setShowAddForm} />}
-                  {activeTab === 'orders' && <OrdersSection orders={orders} onRefresh={fetchData} />}
-                  {activeTab === 'settings' && <SettingsSection settings={settings} onRefresh={fetchData} />}
+                  {activeTab === 'photos' && <PhotosSection photos={photos} onDelete={handleDelete} onMove={handleMove} onEdit={setEditingId} editingId={editingId} onRefresh={() => fetchData(true)} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
+                  {activeTab === 'live2d' && <Live2DSection models={models} onDelete={handleDelete} onMove={handleMove} onEdit={setEditingId} editingId={editingId} onRefresh={() => fetchData(true)} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} onVideoUpload={handleVideoUpload} />}
+                  {activeTab === 'games' && <GamesSection games={games} onDelete={handleDelete} onMove={handleMove} onEdit={setEditingId} editingId={editingId} onRefresh={() => fetchData(true)} showAddForm={showAddForm} setShowAddForm={setShowAddForm} onImageUpload={handleImageUpload} />}
+                  {activeTab === 'inventory' && <InventorySection inventory={inventory} photos={photos} onDelete={handleDelete} onRefresh={() => fetchData(true)} showAddForm={showAddForm} setShowAddForm={setShowAddForm} />}
+                  {activeTab === 'orders' && <OrdersSection orders={orders} onRefresh={() => fetchData(true)} />}
+                  {activeTab === 'settings' && <SettingsSection settings={settings} onRefresh={() => fetchData(true)} />}
                 </>
               )}
             </div>
@@ -254,7 +300,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   );
 }
 
-function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload }: any) {
+function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload, onMove }: any) {
   const [formData, setFormData] = useState({ title: '', description: '', category: '', image_url: '' });
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -450,8 +496,12 @@ function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAdd
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {photos.map((photo: Photo) => (
-          <div key={photo.id} className="bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+        {photos.map((photo: Photo, index: number) => (
+          <div key={photo.id} className="group relative bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+            <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <button disabled={index === 0} onClick={() => onMove('photos', index, 'up')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowUp size={16} /></button>
+              <button disabled={index === photos.length - 1} onClick={() => onMove('photos', index, 'down')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowDown size={16} /></button>
+            </div>
             <img src={photo.image_url} alt={photo.title} className="w-full h-48 object-cover" />
             <div className="p-4">
               <h3 className="font-bold text-brown-800 mb-1">{photo.title}</h3>
@@ -481,7 +531,7 @@ function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAdd
   );
 }
 
-function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload, onVideoUpload }: any) {
+function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload, onVideoUpload, onMove }: any) {
   const [formData, setFormData] = useState({
     title: '',
     client: '',
@@ -854,8 +904,12 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {models.map((model: Live2DModel) => (
-          <div key={model.id} className="bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+        {models.map((model: Live2DModel, index: number) => (
+          <div key={model.id} className="group relative bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+            <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <button disabled={index === 0} onClick={() => onMove('live2d_models', index, 'up')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowUp size={16} /></button>
+              <button disabled={index === models.length - 1} onClick={() => onMove('live2d_models', index, 'down')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowDown size={16} /></button>
+            </div>
             <img src={model.image_url} alt={model.title} className="w-full h-48 object-cover" />
             <div className="p-4">
               <h3 className="font-bold text-brown-800 mb-1">{model.title}</h3>
@@ -879,7 +933,7 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
   );
 }
 
-function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload }: any) {
+function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddForm, setShowAddForm, onImageUpload, onMove }: any) {
   const [formData, setFormData] = useState({
     title: '',
     genre: '',
@@ -1091,8 +1145,12 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {games.map((game: Game) => (
-          <div key={game.id} className="bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+        {games.map((game: Game, index: number) => (
+          <div key={game.id} className="group relative bg-white rounded-xl border-2 border-cottage-200 overflow-hidden shadow-lg hover:shadow-xl transition-all">
+            <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <button disabled={index === 0} onClick={() => onMove('games', index, 'up')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowUp size={16} /></button>
+              <button disabled={index === games.length - 1} onClick={() => onMove('games', index, 'down')} className="p-2 bg-white/90 hover:bg-white text-brown-700 rounded-full shadow-md disabled:opacity-50 transition-all"><ArrowDown size={16} /></button>
+            </div>
             <img src={game.image_url} alt={game.title} className="w-full h-48 object-cover" />
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
